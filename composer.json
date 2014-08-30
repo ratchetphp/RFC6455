@@ -14,7 +14,7 @@
     ]
   , "support": {
         "forum":  "https://groups.google.com/forum/#!forum/ratchet-php"
-      , "issues": "https://github.com/ratchetphp/Ratchet/issues"
+      , "issues": "https://github.com/ratchetphp/RFC6455/issues"
       , "irc":    "irc://irc.freenode.org/reactphp"
     }
   , "autoload": {
