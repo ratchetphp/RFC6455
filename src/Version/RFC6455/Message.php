@@ -1,7 +1,7 @@
 <?php
-namespace Ratchet\WebSocket\Version\RFC6455;
-use Ratchet\WebSocket\Version\MessageInterface;
-use Ratchet\WebSocket\Version\FrameInterface;
+namespace Ratchet\RFC6455\Version\RFC6455;
+use Ratchet\RFC6455\Version\MessageInterface;
+use Ratchet\RFC6455\Version\FrameInterface;
 
 class Message implements MessageInterface, \Countable {
     /**

@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\WebSocket\Version\RFC6455;
+namespace Ratchet\RFC6455\Version\RFC6455;
 use Guzzle\Http\Message\RequestInterface;
 
 /**

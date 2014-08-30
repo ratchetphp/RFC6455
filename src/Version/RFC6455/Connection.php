@@ -1,7 +1,7 @@
 <?php
-namespace Ratchet\WebSocket\Version\RFC6455;
+namespace Ratchet\RFC6455\Version\RFC6455;
 use Ratchet\AbstractConnectionDecorator;
-use Ratchet\WebSocket\Version\DataInterface;
+use Ratchet\RFC6455\Version\DataInterface;
 
 /**
  * {@inheritdoc}

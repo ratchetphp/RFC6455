@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\WebSocket\Version;
+namespace Ratchet\RFC6455\Version;
 
 interface FrameInterface extends DataInterface {
     /**

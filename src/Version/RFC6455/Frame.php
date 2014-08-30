@@ -1,6 +1,6 @@
 <?php
-namespace Ratchet\WebSocket\Version\RFC6455;
-use Ratchet\WebSocket\Version\FrameInterface;
+namespace Ratchet\RFC6455\Version\RFC6455;
+use Ratchet\RFC6455\Version\FrameInterface;
 
 class Frame implements FrameInterface {
     const OP_CONTINUE =  0;

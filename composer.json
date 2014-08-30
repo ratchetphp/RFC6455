@@ -19,11 +19,11 @@
     }
   , "autoload": {
         "psr-4": {
-            "Ratchet\\WebSocket\\": "src"
+            "Ratchet\\RFC6455\\": "src"
         }
     }
   , "require": {
-        "php": ">=5.3.9"
+        "php": ">=5.4.2"
       , "guzzle/http": "~3.6"
     }
 }

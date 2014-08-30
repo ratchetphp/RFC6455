@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\WebSocket\Version;
+namespace Ratchet\RFC6455\Version;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageInterface;
 use Ratchet\WebSocket\Version\RFC6455\HandshakeVerifier;

@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\WebSocket\Version;
+namespace Ratchet\RFC6455\Version;
 use Ratchet\MessageInterface;
 use Ratchet\ConnectionInterface;
 use Guzzle\Http\Message\RequestInterface;

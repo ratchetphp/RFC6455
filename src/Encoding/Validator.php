@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\WebSocket\Encoding;
+namespace Ratchet\RFC6455\Encoding;
 
 /**
  * This class handled encoding validation
