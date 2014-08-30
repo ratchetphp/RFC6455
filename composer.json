@@ -1,0 +1,28 @@
+{
+    "name": "ratchet/rfc6455"
+  , "type": "library"
+  , "description": "RFC6455 protocol handler"
+  , "keywords": ["WebSockets"]
+  , "homepage": "http://socketo.me"
+  , "license": "MIT"
+  , "authors": [
+        {
+            "name": "Chris Boden"
+          , "email": "cboden@gmail.com"
+          , "role": "Developer"
+        }
+    ]
+  , "support": {
+        "forum":  "https://groups.google.com/forum/#!forum/ratchet-php"
+      , "issues": "https://github.com/ratchetphp/Ratchet/issues"
+      , "irc":    "irc://irc.freenode.org/reactphp"
+    }
+  , "autoload": {
+        "psr-4": {
+            "Ratchet\\WebSocket\\": "src"
+        }
+    }
+  , "require": {
+        "php": ">=5.4.2"
+    }
+}
