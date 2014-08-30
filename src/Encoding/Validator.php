@@ -4,7 +4,7 @@ namespace Ratchet\WebSocket\Encoding;
 /**
  * This class handled encoding validation
  */
-class Validator {
+class Validator implements ValidatorInterface {
     const UTF8_ACCEPT = 0;
     const UTF8_REJECT = 1;
 
@@ -35,13 +35,13 @@ class Validator {
      * Lookup if mbstring is available
      * @var bool
      */
-     private $hasMbString = false;
+    private $hasMbString = false;
 
-     /**
-      * Lookup if iconv is available
-      * @var bool
-      */
-     private $hasIconv = false;
+    /**
+     * Lookup if iconv is available
+     * @var bool
+     */
+    private $hasIconv = false;
 
     public function __construct() {
         $this->hasMbString = extension_loaded('mbstring');
