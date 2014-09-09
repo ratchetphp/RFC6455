@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\RFC6455\Version\RFC6455;
+namespace Ratchet\RFC6455\Handshake;
 use Guzzle\Http\Message\RequestInterface;
 
 /**
@@ -7,7 +7,7 @@ use Guzzle\Http\Message\RequestInterface;
  * Verification rules come from section 4.2.1 of the RFC6455 document
  * @todo Currently just returning invalid - should consider returning appropriate HTTP status code error #s
  */
-class HandshakeVerifier {
+class RequestVerifier {
     /**
      * Given an array of the headers this method will run through all verification methods
      * @param \Guzzle\Http\Message\RequestInterface $request

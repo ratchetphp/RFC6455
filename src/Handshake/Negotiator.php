@@ -1,47 +1,42 @@
 <?php
-namespace Ratchet\RFC6455\Version;
-use Ratchet\ConnectionInterface;
-use Ratchet\MessageInterface;
-use Ratchet\WebSocket\Version\RFC6455\HandshakeVerifier;
-use Ratchet\WebSocket\Version\RFC6455\Message;
-use Ratchet\WebSocket\Version\RFC6455\Frame;
-use Ratchet\WebSocket\Version\RFC6455\Connection;
-use Ratchet\WebSocket\Encoding\ValidatorInterface;
-use Ratchet\WebSocket\Encoding\Validator;
+namespace Ratchet\RFC6455\Handshake;
 use Guzzle\Http\Message\RequestInterface;
 use Guzzle\Http\Message\Response;
 
+// TODO remove all these
+use Ratchet\ConnectionInterface;
+use Ratchet\MessageInterface;
+use Ratchet\RFC6455\Encoding\ValidatorInterface;
+use Ratchet\RFC6455\Message\Message;
+use Ratchet\RFC6455\Message\Frame;
+use Ratchet\RFC6455\Message\Connection;
+
 /**
  * The latest version of the WebSocket protocol
- * @link http://tools.ietf.org/html/rfc6455
  * @todo Unicode: return mb_convert_encoding(pack("N",$u), mb_internal_encoding(), 'UCS-4BE');
  */
-class RFC6455 implements VersionInterface {
-    const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+class Negotiator implements NegotiatorInterface {
+    /**
+     * @var \Ratchet\RFC6455\Handshake\RequestVerifier
+     */
+    private $verifier;
 
     /**
-     * @var RFC6455\HandshakeVerifier
+     * @var \Ratchet\RFC6455\Encoding\ValidatorInterface
      */
-    protected $_verifier;
+    private $validator;
 
     /**
      * A lookup of the valid close codes that can be sent in a frame
      * @var array
+     * @deprecated
      */
     private $closeCodes = array();
 
-    /**
-     * @var \Ratchet\WebSocket\Encoding\ValidatorInterface
-     */
-    protected $validator;
+    public function __construct(ValidatorInterface $validator) {
+        $this->verifier = new RequestVerifier;
 
-    public function __construct(ValidatorInterface $validator = null) {
-        $this->_verifier = new HandshakeVerifier;
         $this->setCloseCodes();
-
-        if (null === $validator) {
-            $validator = new Validator;
-        }
 
         $this->validator = $validator;
     }
@@ -66,7 +61,7 @@ class RFC6455 implements VersionInterface {
      * {@inheritdoc}
      */
     public function handshake(RequestInterface $request) {
-        if (true !== $this->_verifier->verifyAll($request)) {
+        if (true !== $this->verifier->verifyAll($request)) {
             return new Response(400);
         }
 
@@ -78,6 +73,7 @@ class RFC6455 implements VersionInterface {
     }
 
     /**
+     * @deprecated
      * @param  \Ratchet\ConnectionInterface $conn
      * @param  \Ratchet\MessageInterface    $coalescedCallback
      * @return \Ratchet\WebSocket\Version\RFC6455\Connection
@@ -95,6 +91,7 @@ class RFC6455 implements VersionInterface {
     }
 
     /**
+     * @deprecated - The logic belons somewhere else
      * @param \Ratchet\WebSocket\Version\RFC6455\Connection $from
      * @param string                                        $data
      */
@@ -121,6 +118,7 @@ class RFC6455 implements VersionInterface {
                 return $from->close($frame::CLOSE_PROTOCOL);
             }
 
+            // This is server-side specific logic
             if (!$frame->isMasked()) {
                 return $from->close($frame::CLOSE_PROTOCOL);
             }
@@ -208,6 +206,7 @@ class RFC6455 implements VersionInterface {
     }
 
     /**
+     * @deprecated
      * @return RFC6455\Message
      */
     public function newMessage() {
@@ -215,6 +214,7 @@ class RFC6455 implements VersionInterface {
     }
 
     /**
+     * @deprecated
      * @param string|null $payload
      * @param bool|null   $final
      * @param int|null    $opcode
@@ -235,6 +235,7 @@ class RFC6455 implements VersionInterface {
     }
 
     /**
+     * @deprecated
      * Determine if a close code is valid
      * @param int|string
      * @return bool
@@ -252,6 +253,7 @@ class RFC6455 implements VersionInterface {
     }
 
     /**
+     * @deprecated
      * Creates a private lookup of valid, private close codes
      */
     protected function setCloseCodes() {

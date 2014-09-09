@@ -1,7 +1,5 @@
 <?php
-namespace Ratchet\RFC6455\Version\RFC6455;
-use Ratchet\RFC6455\Version\MessageInterface;
-use Ratchet\RFC6455\Version\FrameInterface;
+namespace Ratchet\RFC6455\Messaging\Protocol;
 
 class Message implements MessageInterface, \Countable {
     /**

@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\RFC6455\Version;
+namespace Ratchet\RFC6455\Messaging\Protocol;
 
 interface DataInterface {
     /**

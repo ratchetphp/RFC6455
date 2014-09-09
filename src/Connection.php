@@ -4,6 +4,7 @@ use Ratchet\AbstractConnectionDecorator;
 use Ratchet\RFC6455\Version\DataInterface;
 
 /**
+ * @deprecated
  * {@inheritdoc}
  * @property \StdClass $WebSocket
  */
