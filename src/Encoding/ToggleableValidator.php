@@ -1,6 +1,9 @@
 <?php
 namespace Ratchet\RFC6455\Encoding;
 
+/**
+ * @deprecated - Use NullValidator
+ */
 class ToggleableValidator implements ValidatorInterface {
     /**
      * Toggle if checkEncoding checks the encoding or not

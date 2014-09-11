@@ -1,6 +1,9 @@
 <?php
 namespace Ratchet\RFC6455\Encoding;
 
+/**
+ * @todo Probably move this into Messaging\Validation
+ */
 interface ValidatorInterface {
     /**
      * Verify a string matches the encoding type
