@@ -8,6 +8,8 @@ use Guzzle\Http\Message\RequestInterface;
  * @todo Currently just returning invalid - should consider returning appropriate HTTP status code error #s
  */
 class RequestVerifier {
+    const VERSION = 13;
+
     /**
      * Given an array of the headers this method will run through all verification methods
      * @param \Guzzle\Http\Message\RequestInterface $request
@@ -23,9 +25,9 @@ class RequestVerifier {
         $passes += (int)$this->verifyUpgradeRequest((string)$request->getHeader('Upgrade'));
         $passes += (int)$this->verifyConnection((string)$request->getHeader('Connection'));
         $passes += (int)$this->verifyKey((string)$request->getHeader('Sec-WebSocket-Key'));
-        //$passes += (int)$this->verifyVersion($headers['Sec-WebSocket-Version']); // Temporarily breaking functionality
+        $passes += (int)$this->verifyVersion($headers['Sec-WebSocket-Version']);
 
-        return (7 === $passes);
+        return (8 === $passes);
     }
 
     /**
@@ -117,10 +119,9 @@ class RequestVerifier {
      * Verify the version passed matches this RFC
      * @param string|int MUST equal 13|"13"
      * @return bool
-     * @todo Ran in to a problem here...I'm having HyBi use the RFC files, this breaks it!  oops
      */
     public function verifyVersion($val) {
-        return (13 === (int)$val);
+        return (static::VERSION === (int)$val);
     }
 
     /**

@@ -54,7 +54,7 @@ class Negotiator implements NegotiatorInterface {
      * {@inheritdoc}
      */
     public function getVersionNumber() {
-        return 13;
+        return RequestVerifier::VERSION;
     }
 
     /**
@@ -111,25 +111,7 @@ class Negotiator implements NegotiatorInterface {
         if ($from->WebSocket->frame->isCoalesced()) {
             $frame = $from->WebSocket->frame;
 
-            if (false !== $frame->getRsv1() ||
-                false !== $frame->getRsv2() ||
-                false !== $frame->getRsv3()
-            ) {
-                return $from->close($frame::CLOSE_PROTOCOL);
-            }
-
-            // This is server-side specific logic
-            if (!$frame->isMasked()) {
-                return $from->close($frame::CLOSE_PROTOCOL);
-            }
-
-            $opcode = $frame->getOpcode();
-
             if ($opcode > 2) {
-                if ($frame->getPayloadLength() > 125 || !$frame->isFinal()) {
-                    return $from->close($frame::CLOSE_PROTOCOL);
-                }
-
                 switch ($opcode) {
                     case $frame::OP_CLOSE:
                         $closeCode = 0;
@@ -177,14 +159,6 @@ class Negotiator implements NegotiatorInterface {
 
             $overflow = $from->WebSocket->frame->extractOverflow();
 
-            if ($frame::OP_CONTINUE == $frame->getOpcode() && 0 == count($from->WebSocket->message)) {
-                return $from->close($frame::CLOSE_PROTOCOL);
-            }
-
-            if (count($from->WebSocket->message) > 0 && $frame::OP_CONTINUE != $frame->getOpcode()) {
-                return $from->close($frame::CLOSE_PROTOCOL);
-            }
-
             $from->WebSocket->message->addFrame($from->WebSocket->frame);
             unset($from->WebSocket->frame);
         }
@@ -192,10 +166,6 @@ class Negotiator implements NegotiatorInterface {
         if ($from->WebSocket->message->isCoalesced()) {
             $parsed = $from->WebSocket->message->getPayload();
             unset($from->WebSocket->message);
-
-            if (!$this->validator->checkEncoding($parsed, 'UTF-8')) {
-                return $from->close(Frame::CLOSE_BAD_PAYLOAD);
-            }
 
             $from->WebSocket->coalescedCallback->onMessage($from, $parsed);
         }
