@@ -1,11 +1,11 @@
 <?php
 namespace Ratchet\RFC6455\Messaging\Protocol;
 
-class Message implements MessageInterface, \Countable {
+class Message implements MessageInterface {
     /**
      * @var \SplDoublyLinkedList
      */
-    protected $_frames;
+    private $_frames;
 
     public function __construct() {
         $this->_frames = new \SplDoublyLinkedList;
@@ -16,6 +16,22 @@ class Message implements MessageInterface, \Countable {
      */
     public function count() {
         return count($this->_frames);
+    }
+
+    public function offsetExists($index) {
+        return $this->_frames->offsetExists($index);
+    }
+
+    public function offsetGet($index) {
+        return $this->_frames->offsetGet($index);
+    }
+
+    public function offsetSet($index, $newval) {
+        throw new \DomainException('Frame access in messages is read-only');
+    }
+
+    public function offsetUnset($index) {
+        throw new \DomainException('Frame access in messages is read-only');
     }
 
     /**
