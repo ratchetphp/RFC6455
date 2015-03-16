@@ -1,6 +1,5 @@
 <?php
 namespace Ratchet\RFC6455\Handshake;
-use Guzzle\Http\Message\RequestInterface;
 
 /**
  * These are checks to ensure the client requested handshake are valid
@@ -12,7 +11,7 @@ class RequestVerifier {
 
     /**
      * Given an array of the headers this method will run through all verification methods
-     * @param \Guzzle\Http\Message\RequestInterface $request
+     * @param RequestInterface $request
      * @return bool TRUE if all headers are valid, FALSE if 1 or more were invalid
      */
     public function verifyAll(RequestInterface $request) {
