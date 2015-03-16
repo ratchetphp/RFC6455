@@ -1,6 +1,9 @@
 <?php
 namespace Ratchet\RFC6455\Handshake;
 
+use Psr\Http\Message\RequestInterface;
+
+
 /**
  * These are checks to ensure the client requested handshake are valid
  * Verification rules come from section 4.2.1 of the RFC6455 document
@@ -19,12 +22,12 @@ class RequestVerifier {
 
         $passes += (int)$this->verifyMethod($request->getMethod());
         $passes += (int)$this->verifyHTTPVersion($request->getProtocolVersion());
-        $passes += (int)$this->verifyRequestURI($request->getPath());
+        $passes += (int)$this->verifyRequestURI($request->getUri()->getPath());
         $passes += (int)$this->verifyHost((string)$request->getHeader('Host'));
         $passes += (int)$this->verifyUpgradeRequest((string)$request->getHeader('Upgrade'));
         $passes += (int)$this->verifyConnection((string)$request->getHeader('Connection'));
         $passes += (int)$this->verifyKey((string)$request->getHeader('Sec-WebSocket-Key'));
-        $passes += (int)$this->verifyVersion($headers['Sec-WebSocket-Version']);
+        $passes += (int)$this->verifyVersion((string)$request->getHeader('Sec-WebSocket-Version'));
 
         return (8 === $passes);
     }

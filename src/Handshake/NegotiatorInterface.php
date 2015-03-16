@@ -1,8 +1,8 @@
 <?php
 namespace Ratchet\RFC6455\Handshake;
 
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * A standard interface for interacting with the various version of the WebSocket protocol
@@ -13,10 +13,10 @@ interface NegotiatorInterface {
 
     /**
      * Given an HTTP header, determine if this version should handle the protocol
-     * @param ServerRequestInterface $request
+     * @param RequestInterface $request
      * @return bool
      */
-    function isProtocol(ServerRequestInterface $request);
+    function isProtocol(RequestInterface $request);
 
     /**
      * Although the version has a name associated with it the integer returned is the proper identification
@@ -26,10 +26,10 @@ interface NegotiatorInterface {
 
     /**
      * Perform the handshake and return the response headers
-     * @param ServerRequestInterface $request
+     * @param RequestInterface $request
      * @return ResponseInterface
      */
-    function handshake(ServerRequestInterface $request);
+    function handshake(RequestInterface $request);
 
     /**
      * Add supported protocols. If the request has any matching the response will include one

@@ -7,6 +7,9 @@ class Message implements MessageInterface {
      */
     private $_frames;
 
+    /** @var bool  */
+    private $binary = false;
+
     public function __construct() {
         $this->_frames = new \SplDoublyLinkedList;
     }
@@ -50,8 +53,12 @@ class Message implements MessageInterface {
     /**
      * {@inheritdoc}
      * @todo Also, I should perhaps check the type...control frames (ping/pong/close) are not to be considered part of a message
+     * @todo What should we do if there are binary and text mixed together?
      */
     public function addFrame(FrameInterface $fragment) {
+        if ($this->_frames->isEmpty()) {
+            $this->binary = $fragment->getOpcode() == Frame::OP_BINARY;
+        }
         $this->_frames->push($fragment);
 
         return $this;
@@ -117,5 +124,13 @@ class Message implements MessageInterface {
         }
 
         return $buffer;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isBinary()
+    {
+        return $this->binary;
     }
 }

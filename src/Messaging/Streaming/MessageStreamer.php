@@ -19,6 +19,12 @@ class MessageStreamer implements EventEmitterInterface {
     /** @var array  */
     private $closeCodes = [];
 
+    function __construct()
+    {
+        $this->setCloseCodes();
+    }
+
+
     public function onData($data) {
         $overflow = '';
 
@@ -37,6 +43,11 @@ class MessageStreamer implements EventEmitterInterface {
         if ($frame->isCoalesced()) {
             $opcode = $frame->getOpcode();
             if ($opcode > 2) {
+                if ($frame->getPayloadLength() > 125) {
+                    // payload only allowed to 125 on control frames ab 2.5
+                    $this->emit('close', [$frame::CLOSE_PROTOCOL]);
+                    return;
+                }
                 switch ($opcode) {
                     case $frame::OP_CLOSE:
                         $closeCode = 0;

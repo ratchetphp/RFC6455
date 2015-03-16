@@ -2,7 +2,7 @@
 namespace Ratchet\RFC6455\Handshake;
 
 use GuzzleHttp\Psr7\Response;
-use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\RequestInterface;
 use Ratchet\RFC6455\Encoding\ValidatorInterface;
 
 /**
@@ -20,17 +20,8 @@ class Negotiator implements NegotiatorInterface {
      */
     private $validator;
 
-    /**
-     * A lookup of the valid close codes that can be sent in a frame
-     * @var array
-     * @deprecated
-     */
-    private $closeCodes = [];
-
     public function __construct(ValidatorInterface $validator) {
         $this->verifier = new RequestVerifier;
-
-        $this->setCloseCodes();
 
         $this->validator = $validator;
     }
@@ -38,7 +29,7 @@ class Negotiator implements NegotiatorInterface {
     /**
      * {@inheritdoc}
      */
-    public function isProtocol(ServerRequestInterface $request) {
+    public function isProtocol(RequestInterface $request) {
         $version = (int)(string)$request->getHeader('Sec-WebSocket-Version');
 
         return ($this->getVersionNumber() === $version);
@@ -54,7 +45,7 @@ class Negotiator implements NegotiatorInterface {
     /**
      * {@inheritdoc}
      */
-    public function handshake(ServerRequestInterface $request) {
+    public function handshake(RequestInterface $request) {
         if (true !== $this->verifier->verifyAll($request)) {
             return new Response(400);
         }
@@ -71,9 +62,9 @@ class Negotiator implements NegotiatorInterface {
      * @param \Ratchet\WebSocket\Version\RFC6455\Connection $from
      * @param string                                        $data
      */
-    public function onMessage(ConnectionInterface $from, $data) {
-
-    }
+//    public function onMessage(ConnectionInterface $from, $data) {
+//
+//    }
 
     /**
      * Used when doing the handshake to encode the key, verifying client/server are speaking the same language
@@ -83,5 +74,27 @@ class Negotiator implements NegotiatorInterface {
      */
     public function sign($key) {
         return base64_encode(sha1($key . static::GUID, true));
+    }
+
+    /**
+     * Add supported protocols. If the request has any matching the response will include one
+     * @param string $id
+     */
+    function addSupportedSubProtocol($id)
+    {
+        // TODO: Implement addSupportedSubProtocol() method.
+    }
+
+    /**
+     * If enabled and support for a subprotocol has been added handshake
+     *  will not upgrade if a match between request and supported subprotocols
+     * @param boolean $enable
+     * @todo Consider extending this interface and moving this there.
+     *       The spec does says the server can fail for this reason, but
+     * it is not a requirement. This is an implementation detail.
+     */
+    function setStrictSubProtocolCheck($enable)
+    {
+        // TODO: Implement setStrictSubProtocolCheck() method.
     }
 }
