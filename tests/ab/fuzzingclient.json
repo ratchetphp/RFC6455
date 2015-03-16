@@ -1,0 +1,15 @@
+{
+   "options": {"failByDrop": false},
+   "outdir": "./reports/servers",
+
+   "servers": [
+                {"agent": "AutobahnServer",
+                 "url": "ws://localhost:9001",
+                 "options": {"version": 18}}
+              ],
+
+   "casesy": ["1.1.1", "1.1.2"],
+   "cases": ["1.*", "2.*", "3.*", "4.*","5.*"],
+   "exclude-cases": [],
+   "exclude-agent-cases": {}
+}
