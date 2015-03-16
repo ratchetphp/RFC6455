@@ -1,0 +1,12 @@
+{
+    "url": "ws://127.0.0.1:9001"
+    , "options": {
+    "failByDrop": false
+}
+    , "outdir": "./reports/clients"
+    , "casesy": ["*"]
+    , "cases": ["1.*", "2.*", "3.*", "4.*", "5.*"]
+    , "casesx": ["1.1.8"]
+    , "exclude-cases": ["9.8.6"]
+    , "exclude-agent-cases": {}
+}
