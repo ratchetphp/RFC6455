@@ -26,7 +26,7 @@ function getTestCases() {
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer();
+        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(true);
 
         $ms->on('message', function (Message $msg) use ($stream, $deferred) {
             $deferred->resolve($msg->getPayload());
@@ -38,7 +38,7 @@ function getTestCases() {
 
         $ms->on('close', function ($code) use ($stream) {
             if ($code === null) {
-                $stream->close();
+                $stream->end();
                 return;
             }
             $frame = new Frame(pack('n', $code), true, Frame::OP_CLOSE);
@@ -82,16 +82,17 @@ function runTest($case)
 
     $deferred = new Deferred();
 
-    $factory->create('127.0.0.1', 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath) {
+    $factory->create('127.0.0.1', 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
         $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator($casePath);
         $cnRequest = $cn->getRequest();
 
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer();
+        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(true);
 
-        $ms->on('message', function (Message $msg) use ($stream, $deferred) {
+        $ms->on('message', function (Message $msg) use ($stream, $deferred, $case) {
+            echo "Got message on case " . $case . "\n";
             $opcode = $msg->isBinary() ? Frame::OP_BINARY : Frame::OP_TEXT;
             $frame  = new Frame($msg->getPayload(), true, $opcode);
             $frame->maskPayload();
@@ -107,7 +108,7 @@ function runTest($case)
 
         $ms->on('close', function ($code) use ($stream, $deferred) {
             if ($code === null) {
-                $stream->close();
+                $stream->end();
                 return;
             }
             $frame = new Frame(pack('n', $code), true, Frame::OP_CLOSE);
@@ -161,7 +162,7 @@ function createReport() {
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer();
+        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(true);
 
         $ms->on('message', function (Message $msg) use ($stream, $deferred) {
             $deferred->resolve($msg->getPayload());
@@ -173,7 +174,7 @@ function createReport() {
 
         $ms->on('close', function ($code) use ($stream) {
             if ($code === null) {
-                $stream->close();
+                $stream->end();
                 return;
             }
             $frame = new Frame(pack('n', $code), true, Frame::OP_CLOSE);
@@ -212,14 +213,26 @@ function createReport() {
 
 $testPromises = [];
 
-getTestCases()->then(function ($count) {
+getTestCases()->then(function ($count) use ($loop) {
     echo "Running " . $count . " test cases.\n";
 
-    for ($i = 0; $i < $count; $i++) {
-        $testPromises[] = runTest($i + 1);
-    }
+    $allDeferred = new Deferred();
 
-    \React\Promise\all($testPromises)->then(function () {
+    $runNextCase = function () use (&$i, &$runNextCase, $count, $allDeferred) {
+        $i++;
+        if ($i > $count) {
+            $allDeferred->resolve();
+            return;
+        }
+        echo "Running " . $i . "\n";
+        runTest($i)->then($runNextCase);
+    };
+
+    $i = 0;
+    $runNextCase();
+
+    $allDeferred->promise()->then(function () {
+        echo "Generating report...\n";
         createReport();
     });
 });

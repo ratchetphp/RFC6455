@@ -12,4 +12,9 @@ interface MessageInterface extends DataInterface, \ArrayAccess, \Countable {
      * @return int
      */
     function getOpcode();
+
+    /**
+     * @return bool
+     */
+    function isBinary();
 }

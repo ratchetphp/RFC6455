@@ -53,15 +53,29 @@ class Message implements MessageInterface {
     /**
      * {@inheritdoc}
      * @todo Also, I should perhaps check the type...control frames (ping/pong/close) are not to be considered part of a message
-     * @todo What should we do if there are binary and text mixed together?
      */
     public function addFrame(FrameInterface $fragment) {
+        // should the validation stuff be somewhere else?
+        // it really needs the context of the message to know whether there is a problem
         if ($this->_frames->isEmpty()) {
             $this->binary = $fragment->getOpcode() == Frame::OP_BINARY;
         }
+
+        // check to see if this is a continuation frame when there is no
+        // frames yet added
+        if ($this->_frames->count() == 0 && $fragment->getOpcode() == Frame::OP_CONTINUE) {
+            return Frame::CLOSE_PROTOCOL;
+        }
+
+        // check to see if this is not a continuation frame when there is already frames
+        if ($this->_frames->count() > 0 && $fragment->getOpcode() != Frame::OP_CONTINUE) {
+            return Frame::CLOSE_PROTOCOL;
+        }
+
         $this->_frames->push($fragment);
 
-        return $this;
+        return true;
+        //return $this;
     }
 
     /**
@@ -105,6 +119,8 @@ class Message implements MessageInterface {
         foreach ($this->_frames as $frame) {
             $buffer .= $frame->getPayload();
         }
+
+        echo "Reassembled " . strlen($buffer) . " bytes in " . $this->_frames->count() . " frames\n";
 
         return $buffer;
     }

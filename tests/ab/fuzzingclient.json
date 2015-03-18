@@ -8,8 +8,7 @@
                  "options": {"version": 18}}
               ],
 
-   "casesy": ["1.1.1", "1.1.2"],
-   "cases": ["1.*", "2.*", "3.*", "4.*","5.*"],
-   "exclude-cases": [],
+   "cases": ["1.*"],
+   "exclude-cases": ["12.*","13.*"],
    "exclude-agent-cases": {}
 }

@@ -61,7 +61,6 @@ class Frame implements FrameInterface {
      */
     protected $secondByte = -1;
 
-
     /**
      * @param string|null $payload
      * @param bool        $final
@@ -445,5 +444,35 @@ class Frame implements FrameInterface {
         }
 
         return '';
+    }
+
+    /**
+     * Determine if a close code is valid
+     * @param int|string
+     * @return bool
+     */
+    public function isValidCloseCode($val) {
+        if (in_array($val, [
+            static::CLOSE_NORMAL,
+            static::CLOSE_GOING_AWAY,
+            static::CLOSE_PROTOCOL,
+            static::CLOSE_BAD_DATA,
+            //static::CLOSE_NO_STATUS,
+            //static::CLOSE_ABNORMAL,
+            static::CLOSE_BAD_PAYLOAD,
+            static::CLOSE_POLICY,
+            static::CLOSE_TOO_BIG,
+            static::CLOSE_MAND_EXT,
+            static::CLOSE_SRV_ERR,
+            //static::CLOSE_TLS,
+        ])) {
+            return true;
+        }
+
+        if ($val >= 3000 && $val <= 4999) {
+            return true;
+        }
+
+        return false;
     }
 }
