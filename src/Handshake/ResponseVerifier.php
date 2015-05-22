@@ -26,16 +26,19 @@ class ResponseVerifier {
         return ($status == 101);
     }
 
-    public function verifyUpgrade($upgrade) {
-        return (strtolower($upgrade) == "websocket");
+    public function verifyUpgrade(array $upgrade) {
+        return (in_array('websocket', array_map('strtolower', $upgrade)));
     }
 
-    public function verifyConnection($connection) {
-        return (strtolower($connection) == "upgrade");
+    public function verifyConnection(array $connection) {
+        return (in_array('upgrade', array_map('strtolower', $connection)));
     }
 
     public function verifySecWebSocketAccept($swa, $key) {
-        return ($swa == $this->sign($key));
+        return (
+            1 === count($swa) &&
+            1 === count($key) &&
+            $swa[0] == $this->sign($key[0]));
     }
 
     public function sign($key) {
