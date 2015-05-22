@@ -22,8 +22,10 @@
     },
     "require": {
         "php": ">=5.4.2",
-        "guzzlehttp/psr7": "dev-master",
-        "psr/http-message": "0.9.*",
-        "evenement/evenement": "~2.0"
+        "guzzlehttp/psr7": "^1.0",
+        "evenement/evenement": "^2.0"
+    },
+    "require-dev": {
+        "react/http": "^0.4.1"
     }
 }
