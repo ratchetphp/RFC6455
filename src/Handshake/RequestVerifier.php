@@ -23,11 +23,11 @@ class RequestVerifier {
         $passes += (int)$this->verifyMethod($request->getMethod());
         $passes += (int)$this->verifyHTTPVersion($request->getProtocolVersion());
         $passes += (int)$this->verifyRequestURI($request->getUri()->getPath());
-        $passes += (int)$this->verifyHost((string)$request->getHeader('Host'));
-        $passes += (int)$this->verifyUpgradeRequest((string)$request->getHeader('Upgrade'));
-        $passes += (int)$this->verifyConnection((string)$request->getHeader('Connection'));
-        $passes += (int)$this->verifyKey((string)$request->getHeader('Sec-WebSocket-Key'));
-        $passes += (int)$this->verifyVersion((string)$request->getHeader('Sec-WebSocket-Version'));
+        $passes += (int)$this->verifyHost($request->getHeader('Host'));
+        $passes += (int)$this->verifyUpgradeRequest($request->getHeader('Upgrade'));
+        $passes += (int)$this->verifyConnection($request->getHeader('Connection'));
+        $passes += (int)$this->verifyKey($request->getHeader('Sec-WebSocket-Key'));
+        $passes += (int)$this->verifyVersion($request->getHeader('Sec-WebSocket-Version'));
 
         return (8 === $passes);
     }
@@ -71,59 +71,50 @@ class RequestVerifier {
     }
 
     /**
-     * @param string|null
+     * @param array $hostHeader
      * @return bool
-     * @todo Find out if I can find the master socket, ensure the port is attached to header if not 80 or 443 - not sure if this is possible, as I tried to hide it
      * @todo Once I fix HTTP::getHeaders just verify this isn't NULL or empty...or maybe need to verify it's a valid domain??? Or should it equal $_SERVER['HOST'] ?
      */
-    public function verifyHost($val) {
-        return (null !== $val);
+    public function verifyHost(array $hostHeader) {
+        return (1 === count($hostHeader));
     }
 
     /**
      * Verify the Upgrade request to WebSockets.
-     * @param  string $val MUST equal "websocket"
+     * @param  array $upgradeHeader MUST include "websocket"
      * @return bool
      */
-    public function verifyUpgradeRequest($val) {
-        return ('websocket' === strtolower($val));
+    public function verifyUpgradeRequest(array $upgradeHeader) {
+        return (in_array('websocket', array_map('strtolower', $upgradeHeader)));
     }
 
     /**
      * Verify the Connection header
-     * @param  string $val MUST equal "Upgrade"
+     * @param  array $connectionHeader MUST include "Upgrade"
      * @return bool
      */
-    public function verifyConnection($val) {
-        $val = strtolower($val);
-
-        if ('upgrade' === $val) {
-            return true;
-        }
-
-        $vals = explode(',', str_replace(', ', ',', $val));
-
-        return (false !== array_search('upgrade', $vals));
+    public function verifyConnection(array $connectionHeader) {
+        return in_array('upgrade', array_map('strtolower', $connectionHeader));
     }
 
     /**
      * This function verifies the nonce is valid (64 big encoded, 16 bytes random string)
-     * @param string|null
+     * @param array $keyHeader
      * @return bool
      * @todo The spec says we don't need to base64_decode - can I just check if the length is 24 and not decode?
      * @todo Check the spec to see what the encoding of the key could be
      */
-    public function verifyKey($val) {
-        return (16 === strlen(base64_decode((string)$val)));
+    public function verifyKey(array $keyHeader) {
+        return in_array(16, array_map('strlen', array_map('base64_decode', $keyHeader)));
     }
 
     /**
      * Verify the version passed matches this RFC
-     * @param string|int MUST equal 13|"13"
+     * @param string|int $versionHeader MUST equal 13|"13"
      * @return bool
      */
-    public function verifyVersion($val) {
-        return (static::VERSION === (int)$val);
+    public function verifyVersion($versionHeader) {
+        return (1 === count($versionHeader) && static::VERSION === (int)$versionHeader[0]);
     }
 
     /**

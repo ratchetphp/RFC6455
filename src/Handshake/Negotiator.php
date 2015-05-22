@@ -53,7 +53,7 @@ class Negotiator implements NegotiatorInterface {
         return new Response(101, [
             'Upgrade'              => 'websocket'
           , 'Connection'           => 'Upgrade'
-          , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key'))
+          , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
         ]);
     }
 
