@@ -53,6 +53,10 @@ class MessageValidator {
         return true;
     }
 
+    /**
+     * @param Frame $frame
+     * @return bool|int Return true if everything is good, an integer close code if not
+     */
     public function validateFrame(Frame $frame) {
         if (false !== $frame->getRsv1() ||
             false !== $frame->getRsv2() ||
@@ -78,7 +82,6 @@ class MessageValidator {
                     $closeCode = 0;
 
                     $bin = $frame->getPayload();
-
 
                     if (empty($bin)) {
                         return $frame::CLOSE_NORMAL;

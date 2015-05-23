@@ -1,114 +1,52 @@
 <?php
-
 namespace Ratchet\RFC6455\Messaging\Streaming;
-
-use Evenement\EventEmitterInterface;
-use Evenement\EventEmitterTrait;
-use Ratchet\RFC6455\Encoding\Validator;
+use Ratchet\RFC6455\Encoding\ValidatorInterface;
 use Ratchet\RFC6455\Messaging\Protocol\Frame;
 use Ratchet\RFC6455\Messaging\Protocol\Message;
 use Ratchet\RFC6455\Messaging\Validation\MessageValidator;
 
-class MessageStreamer implements EventEmitterInterface {
-    use EventEmitterTrait;
-
-    /** @var  Frame */
-    private $currentFrame;
-
-    /** @var  Message */
-    private $currentMessage;
-
+class MessageStreamer {
     /** @var  MessageValidator */
     private $validator;
 
-    /** @var  bool */
-    private $checkForMask;
-
-    function __construct($client = false)
-    {
-        $this->checkForMask = !$client;
-        $this->validator = new MessageValidator(new Validator(), $this->checkForMask);
+    function __construct(ValidatorInterface $encodingValidator, $expectMask = false) {
+        $this->validator = new MessageValidator($encodingValidator, !$expectMask);
     }
 
 
-    public function onData($data) {
+    public function onData($data, ContextInterface $context) {
         $overflow = '';
 
-        if (!isset($this->currentMessage)) {
-            $this->currentMessage = $this->newMessage();
-        }
+        $context->getMessage() || $context->setMessage($this->newMessage());
+        $context->getFrame() || $context->setFrame($this->newFrame());
 
-        // There is a frame fragment attached to the connection, add to it
-        if (!isset($this->currentFrame)) {
-            $this->currentFrame = $this->newFrame();
-        }
-
-        $frame = $this->currentFrame;
+        $frame = $context->getFrame();
 
         $frame->addBuffer($data);
         if ($frame->isCoalesced()) {
             $validFrame = $this->validator->validateFrame($frame);
-            if ($validFrame !== true) {
-                $this->emit('close', [$validFrame]);
+            if (true !== $validFrame) {
+                $context->onClose($validFrame);
+
                 return;
             }
 
             $opcode = $frame->getOpcode();
             if ($opcode > 2) {
-                if ($frame->getPayloadLength() > 125) {
-                    // payload only allowed to 125 on control frames ab 2.5
-                    $this->emit('close', [$frame::CLOSE_PROTOCOL]);
-                    return;
-                }
                 switch ($opcode) {
-                    case $frame::OP_CLOSE:
-                        $closeCode = 0;
-
-                        $bin = $frame->getPayload();
-
-                        if (empty($bin)) {
-                            $this->emit('close', [null]);
-                            return;
-                        }
-
-                        if (strlen($bin) >= 2) {
-                            list($closeCode) = array_merge(unpack('n*', substr($bin, 0, 2)));
-                        }
-
-                        if (!$frame->isValidCloseCode($closeCode)) {
-                            $this->emit('close', [$frame::CLOSE_PROTOCOL]);
-                            return;
-                        }
-
-                        // todo:
-                        //if (!$this->validator->checkEncoding(substr($bin, 2), 'UTF-8')) {
-                        //    $this->emit('close', [$frame::CLOSE_BAD_PAYLOAD]);
-                        //    return;
-                        //}
-
-                        $this->emit('close', [$closeCode]);
-                        return;
-                        break;
                     case $frame::OP_PING:
-                        // this should probably be automatic
-                        //$from->send($this->newFrame($frame->getPayload(), true, $frame::OP_PONG));
-                        $this->emit('ping', [$frame]);
-                        break;
+                        $context->onPing($frame);
+                    break;
                     case $frame::OP_PONG:
-                        $this->emit('pong', [$frame]);
-                        break;
-                    default:
-                        $this->emit('close', [$frame::CLOSE_PROTOCOL]);
-                        return;
-                        break;
+                        $context->onPong($frame);
+                    break;
                 }
 
                 $overflow = $frame->extractOverflow();
-
-                unset($this->currentFrame, $frame, $opcode);
+                $context->setFrame(null);
 
                 if (strlen($overflow) > 0) {
-                    $this->onData($overflow);
+                    $this->onData($overflow, $context);
                 }
 
                 return;
@@ -116,32 +54,30 @@ class MessageStreamer implements EventEmitterInterface {
 
             $overflow = $frame->extractOverflow();
 
-            $frameAdded = $this->currentMessage->addFrame($this->currentFrame);
-            if ($frameAdded !== true) {
-                $this->emit('close', [$frameAdded]);
+            $frameAdded = $context->getMessage()->addFrame($frame);
+            if (true !== $frameAdded) {
+                $context->onClose($frameAdded);
             }
-            unset($this->currentFrame);
+            $context->setFrame(null);
         }
 
-        if ($this->currentMessage->isCoalesced()) {
-            $msgCheck = $this->validator->checkMessage($this->currentMessage);
+        if ($context->getMessage()->isCoalesced()) {
+            $msgCheck = $this->validator->checkMessage($context->getMessage());
             if ($msgCheck !== true) {
-                if ($msgCheck === false) $msgCheck = null;
-                $this->emit('close', [$msgCheck]);
+                $context->onClose($msgCheck || null);
                 return;
             }
-            $this->emit('message', [$this->currentMessage]);
-            //$parsed = $from->WebSocket->message->getPayload();
-            unset($this->currentMessage);
+            $context->onMessage($context->getMessage());
+            $context->setMessage(null);
         }
 
         if (strlen($overflow) > 0) {
-            $this->onData($overflow);
+            $this->onData($overflow, $context);
         }
     }
 
     /**
-     * @return Message
+     * @return \Ratchet\RFC6455\Messaging\Protocol\MessageInterface
      */
     public function newMessage() {
         return new Message;
@@ -151,7 +87,7 @@ class MessageStreamer implements EventEmitterInterface {
      * @param string|null $payload
      * @param bool|null   $final
      * @param int|null    $opcode
-     * @return Frame
+     * @return \Ratchet\RFC6455\Messaging\Protocol\FrameInterface
      */
     public function newFrame($payload = null, $final = null, $opcode = null) {
         return new Frame($payload, $final, $opcode);

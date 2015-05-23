@@ -55,7 +55,7 @@ class RequestVerifier {
      * @return bool
      */
     public function verifyRequestURI($val) {
-        if ($val[0] != '/') {
+        if ($val[0] !== '/') {
             return false;
         }
 
@@ -81,11 +81,11 @@ class RequestVerifier {
 
     /**
      * Verify the Upgrade request to WebSockets.
-     * @param  array $upgradeHeader MUST include "websocket"
+     * @param  array $upgradeHeader MUST equal "websocket"
      * @return bool
      */
     public function verifyUpgradeRequest(array $upgradeHeader) {
-        return (in_array('websocket', array_map('strtolower', $upgradeHeader)));
+        return (1 === count($upgradeHeader) && 'websocket' === strtolower($upgradeHeader[0]));
     }
 
     /**
@@ -94,7 +94,7 @@ class RequestVerifier {
      * @return bool
      */
     public function verifyConnection(array $connectionHeader) {
-        return in_array('upgrade', array_map('strtolower', $connectionHeader));
+        return (1 === count($connectionHeader) && 'upgrade' === strtolower(($connectionHeader[0])));
     }
 
     /**
@@ -105,7 +105,7 @@ class RequestVerifier {
      * @todo Check the spec to see what the encoding of the key could be
      */
     public function verifyKey(array $keyHeader) {
-        return in_array(16, array_map('strlen', array_map('base64_decode', $keyHeader)));
+        return (1 === count($keyHeader) && 16 === strlen(base64_decode($keyHeader[0])));
     }
 
     /**
