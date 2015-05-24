@@ -4,8 +4,31 @@ use Ratchet\RFC6455\Messaging\Protocol\Frame;
 use Ratchet\RFC6455\Messaging\Protocol\Message;
 
 require __DIR__ . '/../bootstrap.php';
+require __DIR__ . '/AbConnectionContext.php';
 
 define('AGENT', 'RatchetRFC/0.0.0');
+
+
+class EmConnectionContext extends AbConnectionContext implements \Evenement\EventEmitterInterface, Ratchet\RFC6455\Messaging\Streaming\ContextInterface {
+    use \Evenement\EventEmitterTrait;
+
+    public function onMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) {
+        $this->emit('message', [$msg]);
+    }
+
+    public function sendMessage(Frame $frame) {
+        if ($this->maskPayload) {
+            $frame->maskPayload();
+        }
+        $this->_conn->write($frame->getContents());
+    }
+
+    public function close($closeCode = Frame::CLOSE_NORMAL) {
+        $closeFrame = new Frame(pack('n', $closeCode), true, Frame::OP_CLOSE);
+        $closeFrame->maskPayload();
+        $this->_conn->end($closeFrame->getContents());
+    }
+}
 
 $loop = React\EventLoop\Factory::create();
 
@@ -26,27 +49,12 @@ function getTestCases() {
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(true);
+        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(new \Ratchet\RFC6455\Encoding\Validator(), true);
 
-        $ms->on('message', function (Message $msg) use ($stream, $deferred) {
-            $deferred->resolve($msg->getPayload());
+        /** @var EmConnectionContext $context */
+        $context = null;
 
-            $closeFrame = new Frame(pack('n', Frame::CLOSE_NORMAL), true, Frame::OP_CLOSE);
-            $closeFrame->maskPayload();
-            $stream->end($closeFrame->getContents());
-        });
-
-        $ms->on('close', function ($code) use ($stream) {
-            if ($code === null) {
-                $stream->end();
-                return;
-            }
-            $frame = new Frame(pack('n', $code), true, Frame::OP_CLOSE);
-            $frame->maskPayload();
-            $stream->end($frame->getContents());
-        });
-
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred, &$context) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -58,13 +66,20 @@ function getTestCases() {
                     if (!$cn->validateResponse($response)) {
                         $stream->end();
                         $deferred->reject();
+                    } else {
+                        $context = new EmConnectionContext($stream, true);
+
+                        $context->on('message', function (Message $msg) use ($stream, $deferred, $context) {
+                            $deferred->resolve($msg->getPayload());
+                            $context->close();
+                        });
                     }
                 }
             }
 
             // feed the message streamer
-            if ($response) {
-                $ms->onData($data);
+            if ($response && $context) {
+                $ms->onData($data, $context);
             }
         });
 
@@ -89,34 +104,12 @@ function runTest($case)
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(true);
+        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(new \Ratchet\RFC6455\Encoding\Validator(), true);
 
-        $ms->on('message', function (Message $msg) use ($stream, $deferred, $case) {
-            echo "Got message on case " . $case . "\n";
-            $opcode = $msg->isBinary() ? Frame::OP_BINARY : Frame::OP_TEXT;
-            $frame  = new Frame($msg->getPayload(), true, $opcode);
-            $frame->maskPayload();
+        /** @var AbConnectionContext $context */
+        $context = null;
 
-            $stream->write($frame->getContents());
-        });
-
-        $ms->on('ping', function (Frame $frame) use ($stream) {
-            $response = new Frame($frame->getPayload(), true, Frame::OP_PONG);
-            $response->maskPayload();
-            $stream->write($response->getContents());
-        });
-
-        $ms->on('close', function ($code) use ($stream, $deferred) {
-            if ($code === null) {
-                $stream->end();
-                return;
-            }
-            $frame = new Frame(pack('n', $code), true, Frame::OP_CLOSE);
-            $frame->maskPayload();
-            $stream->end($frame->getContents());
-        });
-
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred, &$context) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -128,13 +121,15 @@ function runTest($case)
                     if (!$cn->validateResponse($response)) {
                         $stream->end();
                         $deferred->reject();
+                    } else {
+                        $context = new AbConnectionContext($stream, true);
                     }
                 }
             }
 
             // feed the message streamer
-            if ($response) {
-                $ms->onData($data);
+            if ($response && $context) {
+                $ms->onData($data, $context);
             }
         });
 
@@ -148,8 +143,6 @@ function runTest($case)
     return $deferred->promise();
 }
 
-
-
 function createReport() {
     global $factory;
 
@@ -162,27 +155,12 @@ function createReport() {
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(true);
+        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(new \Ratchet\RFC6455\Encoding\Validator(), true);
 
-        $ms->on('message', function (Message $msg) use ($stream, $deferred) {
-            $deferred->resolve($msg->getPayload());
+        /** @var EmConnectionContext $context */
+        $context = null;
 
-            $closeFrame = new Frame(pack('n', Frame::CLOSE_NORMAL), true, Frame::OP_CLOSE);
-            $closeFrame->maskPayload();
-            $stream->end($closeFrame->getContents());
-        });
-
-        $ms->on('close', function ($code) use ($stream) {
-            if ($code === null) {
-                $stream->end();
-                return;
-            }
-            $frame = new Frame(pack('n', $code), true, Frame::OP_CLOSE);
-            $frame->maskPayload();
-            $stream->end($frame->getContents());
-        });
-
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred, &$context) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -194,13 +172,20 @@ function createReport() {
                     if (!$cn->validateResponse($response)) {
                         $stream->end();
                         $deferred->reject();
+                    } else {
+                        $context = new EmConnectionContext($stream, true);
+
+                        $context->on('message', function (Message $msg) use ($stream, $deferred, $context) {
+                            $deferred->resolve($msg->getPayload());
+                            $context->close();
+                        });
                     }
                 }
             }
 
             // feed the message streamer
-            if ($response) {
-                $ms->onData($data);
+            if ($response && $context) {
+                $ms->onData($data, $context);
             }
         });
 
