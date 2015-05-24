@@ -64,7 +64,7 @@ class MessageStreamer {
         if ($context->getMessage()->isCoalesced()) {
             $msgCheck = $this->validator->checkMessage($context->getMessage());
             if ($msgCheck !== true) {
-                $context->onClose($msgCheck || null);
+                $context->onClose($msgCheck);
                 return;
             }
             $context->onMessage($context->getMessage());

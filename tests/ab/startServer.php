@@ -33,8 +33,11 @@ class ConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\ContextIn
     }
 
     public function onMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) {
-        $frame = new Frame($msg->getPayload(), true, $msg[0]->getOpcode());
-        $this->_conn->write($frame->getContents());
+        foreach ($msg as $frame) {
+            $frame->unMaskPayload();
+        }
+
+        $this->_conn->write($msg->getContents());
     }
 
     public function onPing(\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $frame) {

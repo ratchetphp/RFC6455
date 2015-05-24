@@ -1,7 +1,7 @@
 <?php
 namespace Ratchet\RFC6455\Messaging\Protocol;
 
-class Message implements MessageInterface {
+class Message implements \IteratorAggregate, MessageInterface {
     /**
      * @var \SplDoublyLinkedList
      */
@@ -12,6 +12,10 @@ class Message implements MessageInterface {
 
     public function __construct() {
         $this->_frames = new \SplDoublyLinkedList;
+    }
+
+    public function getIterator() {
+        return $this->_frames;
     }
 
     /**
