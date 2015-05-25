@@ -8,6 +8,8 @@ require __DIR__ . '/AbConnectionContext.php';
 
 define('AGENT', 'RatchetRFC/0.0.0');
 
+$testServer = "127.0.0.1";
+
 
 class EmConnectionContext extends AbConnectionContext implements \Evenement\EventEmitterInterface, Ratchet\RFC6455\Messaging\Streaming\ContextInterface {
     use \Evenement\EventEmitterTrait;
@@ -39,10 +41,11 @@ $factory = new \React\SocketClient\Connector($loop, $dnsResolver);
 
 function getTestCases() {
     global $factory;
+    global $testServer;
 
     $deferred = new Deferred();
 
-    $factory->create('127.0.0.1', 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
         $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator("/getCaseCount");
         $cnRequest = $cn->getRequest();
 
@@ -92,12 +95,13 @@ function getTestCases() {
 function runTest($case)
 {
     global $factory;
+    global $testServer;
 
     $casePath = "/runCase?case={$case}&agent=" . AGENT;
 
     $deferred = new Deferred();
 
-    $factory->create('127.0.0.1', 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
         $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator($casePath);
         $cnRequest = $cn->getRequest();
 
@@ -145,10 +149,11 @@ function runTest($case)
 
 function createReport() {
     global $factory;
+    global $testServer;
 
     $deferred = new Deferred();
 
-    $factory->create('127.0.0.1', 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
         $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator('/updateReports?agent=' . AGENT);
         $cnRequest = $cn->getRequest();
 
