@@ -4,10 +4,7 @@
     "failByDrop": false
 }
     , "outdir": "./reports/clients"
-    , "casesa": ["*"]
-    , "casesj": ["9.3.2", "9.3.3", "9.3.4", "9.4.2", "9.4.3", "9.4.4", "9.7.6", "9.8.6"]
-    , "cases": ["9.3.1", "9.3.2"]
-    , "casesx": ["1.*","2.*"]
+    , "cases": ["*"]
     , "exclude-cases": ["12.*", "13.*"]
     , "exclude-agent-cases": {}
 }

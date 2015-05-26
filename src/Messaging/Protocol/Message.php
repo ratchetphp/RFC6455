@@ -124,8 +124,6 @@ class Message implements \IteratorAggregate, MessageInterface {
             $buffer .= $frame->getPayload();
         }
 
-        echo "Reassembled " . strlen($buffer) . " bytes in " . $this->_frames->count() . " frames\n";
-
         return $buffer;
     }
 
