@@ -64,15 +64,15 @@ $loop   = \React\EventLoop\Factory::create();
 $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
-$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) {
-    $conn = new ConnectionContext($response);
+$encodingValidator = new \Ratchet\RFC6455\Encoding\Validator;
+$negotiator = new \Ratchet\RFC6455\Handshake\Negotiator($encodingValidator);
+$ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($encodingValidator);
 
-    $encodingValidator = new \Ratchet\RFC6455\Encoding\Validator;
+$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $ms) {
+    $conn = new ConnectionContext($response);
 
     // make the React Request a Psr7 request (not perfect)
     $psrRequest = new \GuzzleHttp\Psr7\Request($request->getMethod(), $request->getPath(), $request->getHeaders());
-
-    $negotiator = new \Ratchet\RFC6455\Handshake\Negotiator($encodingValidator);
 
     $negotiatorResponse = $negotiator->handshake($psrRequest);
 
@@ -88,8 +88,6 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
         $response->end();
         return;
     }
-
-    $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($encodingValidator);
 
     $request->on('data', function ($data) use ($ms, $conn) {
         $ms->onData($data, $conn);

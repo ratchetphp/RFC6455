@@ -25,6 +25,7 @@
         "guzzlehttp/psr7": "^1.0"
     },
     "require-dev": {
-        "react/http": "^0.4.1"
+        "react/http": "^0.4.1",
+        "react/socket-client": "^0.4.3"
     }
 }

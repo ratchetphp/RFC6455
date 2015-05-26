@@ -1,8 +1,7 @@
 <?php
 namespace Ratchet\RFC6455\Handshake;
-
-use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
+use GuzzleHttp\Psr7\Response;
 use Ratchet\RFC6455\Encoding\ValidatorInterface;
 
 /**
@@ -30,9 +29,7 @@ class Negotiator implements NegotiatorInterface {
      * {@inheritdoc}
      */
     public function isProtocol(RequestInterface $request) {
-        $version = (int)(string)$request->getHeader('Sec-WebSocket-Version');
-
-        return ($this->getVersionNumber() === $version);
+        return $this->verifier->verifyVersion($request->getHeader('Sec-WebSocket-Version'));
     }
 
     /**
@@ -46,25 +43,45 @@ class Negotiator implements NegotiatorInterface {
      * {@inheritdoc}
      */
     public function handshake(RequestInterface $request) {
-        if (true !== $this->verifier->verifyAll($request)) {
+        if (true !== $this->verifier->verifyMethod($request->getMethod())) {
+            return new Response(405);
+        }
+
+        if (true !== $this->verifier->verifyHTTPVersion($request->getProtocolVersion())) {
+            return new Response(505);
+        }
+
+        if (true !== $this->verifier->verifyRequestURI($request->getUri()->getPath())) {
             return new Response(400);
+        }
+
+        if (true !== $this->verifier->verifyHost($request->getHeader('Host'))) {
+            return new Response(400);
+        }
+
+        if (true !== $this->verifier->verifyUpgradeRequest($request->getHeader('Upgrade'))) {
+            return new Response(400, [], '1.1', null, 'Upgrade header MUST be provided');
+        }
+
+        if (true !== $this->verifier->verifyConnection($request->getHeader('Connection'))) {
+            return new Response(400, [], '1.1', null, 'Connection header MUST be provided');
+        }
+
+        if (true !== $this->verifier->verifyKey($request->getHeader('Sec-WebSocket-Key'))) {
+            return new Response(400, [], '1.1', null, 'Invalid Sec-WebSocket-Key');
+        }
+
+        if (true !== $this->verifier->verifyVersion($request->getHeader('Sec-WebSocket-Version'))) {
+            return new Response(426, ['Sec-WebSocket-Version' => $this->getVersionNumber()]);
         }
 
         return new Response(101, [
             'Upgrade'              => 'websocket'
           , 'Connection'           => 'Upgrade'
           , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
+          , 'X-Powered-By'         => 'Ratchet'
         ]);
     }
-
-    /**
-     * @deprecated - The logic belons somewhere else
-     * @param \Ratchet\WebSocket\Version\RFC6455\Connection $from
-     * @param string                                        $data
-     */
-//    public function onMessage(ConnectionInterface $from, $data) {
-//
-//    }
 
     /**
      * Used when doing the handshake to encode the key, verifying client/server are speaking the same language

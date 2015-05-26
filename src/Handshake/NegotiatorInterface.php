@@ -1,8 +1,6 @@
 <?php
 namespace Ratchet\RFC6455\Handshake;
-
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 
 /**
  * A standard interface for interacting with the various version of the WebSocket protocol
@@ -27,7 +25,7 @@ interface NegotiatorInterface {
     /**
      * Perform the handshake and return the response headers
      * @param RequestInterface $request
-     * @return ResponseInterface
+     * @return \Psr\Http\Message\ResponseInterface
      */
     function handshake(RequestInterface $request);
 
