@@ -11,8 +11,15 @@ class MessageStreamer {
      */
     private $validator;
 
+    private $exceptionFactory;
+
     function __construct(ValidatorInterface $encodingValidator, $expectMask = false) {
         $this->validator = new MessageValidator($encodingValidator, !$expectMask);
+
+        $exception = new \UnderflowException;
+        $this->exceptionFactory = function() use ($exception) {
+            return $exception;
+        };
     }
 
 
@@ -90,6 +97,6 @@ class MessageStreamer {
      * @return \Ratchet\RFC6455\Messaging\Protocol\FrameInterface
      */
     public function newFrame($payload = null, $final = null, $opcode = null) {
-        return new Frame($payload, $final, $opcode);
+        return new Frame($payload, $final, $opcode, $this->exceptionFactory);
     }
 }
