@@ -18,6 +18,8 @@ class ConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\ContextIn
 
     public function setFrame(\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $frame = null) {
         $this->_frame = $frame;
+
+        return $frame;
     }
 
     public function getFrame() {
@@ -26,6 +28,8 @@ class ConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\ContextIn
 
     public function setMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $message = null) {
         $this->_message = $message;
+
+        return $message;
     }
 
     public function getMessage() {
@@ -33,10 +37,6 @@ class ConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\ContextIn
     }
 
     public function onMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) {
-        foreach ($msg as $frame) {
-            $frame->unMaskPayload();
-        }
-
         $this->_conn->write($msg->getContents());
     }
 

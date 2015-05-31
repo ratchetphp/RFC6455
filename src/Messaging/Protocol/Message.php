@@ -7,9 +7,6 @@ class Message implements \IteratorAggregate, MessageInterface {
      */
     private $_frames;
 
-    /** @var bool  */
-    private $binary = false;
-
     public function __construct() {
         $this->_frames = new \SplDoublyLinkedList;
     }
@@ -56,30 +53,9 @@ class Message implements \IteratorAggregate, MessageInterface {
 
     /**
      * {@inheritdoc}
-     * @todo Also, I should perhaps check the type...control frames (ping/pong/close) are not to be considered part of a message
      */
     public function addFrame(FrameInterface $fragment) {
-        // should the validation stuff be somewhere else?
-        // it really needs the context of the message to know whether there is a problem
-        if ($this->_frames->isEmpty()) {
-            $this->binary = $fragment->getOpcode() == Frame::OP_BINARY;
-        }
-
-        // check to see if this is a continuation frame when there is no
-        // frames yet added
-        if ($this->_frames->count() == 0 && $fragment->getOpcode() == Frame::OP_CONTINUE) {
-            return Frame::CLOSE_PROTOCOL;
-        }
-
-        // check to see if this is not a continuation frame when there is already frames
-        if ($this->_frames->count() > 0 && $fragment->getOpcode() != Frame::OP_CONTINUE) {
-            return Frame::CLOSE_PROTOCOL;
-        }
-
         $this->_frames->push($fragment);
-
-        return true;
-        //return $this;
     }
 
     /**
@@ -147,8 +123,11 @@ class Message implements \IteratorAggregate, MessageInterface {
     /**
      * @return boolean
      */
-    public function isBinary()
-    {
-        return $this->binary;
+    public function isBinary() {
+        if ($this->_frames->isEmpty()) {
+            throw new \UnderflowException('Not enough data has been received to determine if message is binary');
+        }
+
+        return Frame::OP_BINARY === $this->_frames->bottom()->getOpcode();
     }
 }

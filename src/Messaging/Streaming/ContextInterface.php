@@ -4,6 +4,10 @@ use Ratchet\RFC6455\Messaging\Protocol\MessageInterface;
 use Ratchet\RFC6455\Messaging\Protocol\FrameInterface;
 
 interface ContextInterface {
+    /**
+     * @param FrameInterface $frame
+     * @return FrameInterface
+     */
     public function setFrame(FrameInterface $frame = null);
 
     /**
@@ -11,6 +15,10 @@ interface ContextInterface {
      */
     public function getFrame();
 
+    /**
+     * @param MessageInterface $message
+     * @return MessageInterface
+     */
     public function setMessage(MessageInterface $message = null);
 
     /**

@@ -6,7 +6,9 @@ use Ratchet\RFC6455\Messaging\Protocol\Message;
 use Ratchet\RFC6455\Messaging\Validation\MessageValidator;
 
 class MessageStreamer {
-    /** @var  MessageValidator */
+    /**
+     * @var MessageValidator
+     */
     private $validator;
 
     function __construct(ValidatorInterface $encodingValidator, $expectMask = false) {
@@ -17,27 +19,27 @@ class MessageStreamer {
     public function onData($data, ContextInterface $context) {
         $overflow = '';
 
-        $context->getMessage() || $context->setMessage($this->newMessage());
-        $context->getFrame() || $context->setFrame($this->newFrame());
-
-        $frame = $context->getFrame();
+        $message = $context->getMessage() ?: $context->setMessage($this->newMessage());
+        $frame   = $context->getFrame()   ?: $context->setFrame($this->newFrame());
 
         $frame->addBuffer($data);
         if ($frame->isCoalesced()) {
-            $validFrame = $this->validator->validateFrame($frame);
-            if (true !== $validFrame) {
-                $context->onClose($validFrame);
+            $frameCount = $message->count();
+            $prevFrame  = $frameCount  > 0 ? $message[$frameCount - 1] : null;
 
-                return;
+            $frameStatus = $this->validator->validateFrame($frame, $prevFrame);
+
+            if (0 !== $frameStatus) {
+                return $context->onClose($frameStatus);
             }
 
             $opcode = $frame->getOpcode();
             if ($opcode > 2) {
                 switch ($opcode) {
-                    case $frame::OP_PING:
+                    case Frame::OP_PING:
                         $context->onPing($frame);
                     break;
-                    case $frame::OP_PONG:
+                    case Frame::OP_PONG:
                         $context->onPong($frame);
                     break;
                 }
@@ -54,20 +56,18 @@ class MessageStreamer {
 
             $overflow = $frame->extractOverflow();
 
-            $frameAdded = $context->getMessage()->addFrame($frame);
-            if (true !== $frameAdded) {
-                $context->onClose($frameAdded);
-            }
+            $frame->unMaskPayload();
+            $message->addFrame($frame);
             $context->setFrame(null);
         }
 
-        if ($context->getMessage()->isCoalesced()) {
-            $msgCheck = $this->validator->checkMessage($context->getMessage());
-            if ($msgCheck !== true) {
-                $context->onClose($msgCheck);
-                return;
+        if ($message->isCoalesced()) {
+            $msgCheck = $this->validator->checkMessage($message);
+            if (true !== $msgCheck) {
+                return $context->onClose($msgCheck);
             }
-            $context->onMessage($context->getMessage());
+
+            $context->onMessage($message);
             $context->setMessage(null);
         }
 

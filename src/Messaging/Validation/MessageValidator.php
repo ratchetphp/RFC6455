@@ -18,30 +18,10 @@ class MessageValidator {
     /**
      * Determine if a message is valid
      * @param \Ratchet\RFC6455\Messaging\Protocol\MessageInterface
-     * @return bool|int true if valid - false if incomplete - int of recomended close code
+     * @return bool|int true if valid - false if incomplete - int of recommended close code
      */
     public function checkMessage(MessageInterface $message) {
-        // Need a progressive and complete check...this is only satisfying complete
-        if (!$message->isCoalesced()) {
-            return false;
-        }
-
         $frame = $message[0];
-
-        $frameCheck = $this->validateFrame($frame);
-        if (true !== $frameCheck) {
-            return $frameCheck;
-        }
-
-        // This seems incorrect - how could a frame exist with message count being 0?
-        if ($frame::OP_CONTINUE === $frame->getOpcode() && 0 === count($message)) {
-            return $frame::CLOSE_PROTOCOL;
-        }
-
-        // I (mbonneau) don't understand this - seems to always kill the tests
-//        if (count($message) > 0 && $frame::OP_CONTINUE !== $frame->getOpcode()) {
-//            return $frame::CLOSE_PROTOCOL;
-//        }
 
         if (!$message->isBinary()) {
             $parsed = $message->getPayload();
@@ -54,41 +34,42 @@ class MessageValidator {
     }
 
     /**
-     * @param Frame $frame
-     * @return bool|int Return true if everything is good, an integer close code if not
+     * @param FrameInterface $frame
+     * @param FrameInterface $previousFrame
+     * @return int Return 0 if everything is good, an integer close code if not
      */
-    public function validateFrame(Frame $frame) {
+    public function validateFrame(FrameInterface $frame, FrameInterface $previousFrame = null) {
         if (false !== $frame->getRsv1() ||
             false !== $frame->getRsv2() ||
             false !== $frame->getRsv3()
         ) {
-            return $frame::CLOSE_PROTOCOL;
+            return Frame::CLOSE_PROTOCOL;
         }
 
         // Should be checking all frames
         if ($this->checkForMask && !$frame->isMasked()) {
-            return $frame::CLOSE_PROTOCOL;
+            return Frame::CLOSE_PROTOCOL;
         }
 
         $opcode = $frame->getOpcode();
 
         if ($opcode > 2) {
             if ($frame->getPayloadLength() > 125 || !$frame->isFinal()) {
-                return $frame::CLOSE_PROTOCOL;
+                return Frame::CLOSE_PROTOCOL;
             }
 
             switch ($opcode) {
-                case $frame::OP_CLOSE:
+                case Frame::OP_CLOSE:
                     $closeCode = 0;
 
                     $bin = $frame->getPayload();
 
                     if (empty($bin)) {
-                        return $frame::CLOSE_NORMAL;
+                        return Frame::CLOSE_NORMAL;
                     }
 
                     if (strlen($bin) == 1) {
-                        return $frame::CLOSE_PROTOCOL;
+                        return Frame::CLOSE_PROTOCOL;
                     }
 
                     if (strlen($bin) >= 2) {
@@ -96,24 +77,34 @@ class MessageValidator {
                     }
 
                     if (!$frame->isValidCloseCode($closeCode)) {
-                        return $frame::CLOSE_PROTOCOL;
+                        return Frame::CLOSE_PROTOCOL;
                     }
 
                     if (!$this->validator->checkEncoding(substr($bin, 2), 'UTF-8')) {
-                        return $frame::CLOSE_BAD_PAYLOAD;
+                        return Frame::CLOSE_BAD_PAYLOAD;
                     }
 
-                    return $frame::CLOSE_NORMAL;
+                    return Frame::CLOSE_NORMAL;
                 break;
-                case $frame::OP_PING:
-                case $frame::OP_PONG:
+                case Frame::OP_PING:
+                case Frame::OP_PONG:
                 break;
                 default:
-                    return $frame::CLOSE_PROTOCOL;
+                    return Frame::CLOSE_PROTOCOL;
                 break;
             }
+
+            return 0;
         }
 
-        return true;
+        if (Frame::OP_CONTINUE === $frame->getOpcode() && null === $previousFrame) {
+            return Frame::CLOSE_PROTOCOL;
+        }
+
+        if (null !== $previousFrame && Frame::OP_CONTINUE != $frame->getOpcode()) {
+            return Frame::CLOSE_PROTOCOL;
+        }
+
+        return 0;
     }
 }
