@@ -80,8 +80,9 @@ class Negotiator implements NegotiatorInterface {
         }
 
         $headers = [];
-        if (count($this->_supportedSubProtocols) > 0) {
-            $subProtocols = $request->getHeader('Sec-WebSocket-Protocol');
+        $subProtocols = $request->getHeader('Sec-WebSocket-Protocol');
+        if (count($subProtocols) > 0 || (count($this->_supportedSubProtocols) > 0 && $this->_strictSubProtocols)) {
+            $subProtocols = array_map('trim', explode(',', implode(',', $subProtocols)));
 
             $match = array_reduce($subProtocols, function($accumulator, $protocol) {
                 return $accumulator ?: (isset($this->_supportedSubProtocols[$protocol]) ? $protocol : null);
@@ -91,14 +92,16 @@ class Negotiator implements NegotiatorInterface {
                 return new Response(400, [], '1.1', null ,'No Sec-WebSocket-Protocols requested supported');
             }
 
-            $headers['Sec-WebSocket-Protocol'] = $match;
+            if (null !== $match) {
+                $headers['Sec-WebSocket-Protocol'] = $match;
+            }
         }
 
         return new Response(101, array_merge($headers, [
             'Upgrade'              => 'websocket'
-          , 'Connection'           => 'Upgrade'
-          , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
-          , 'X-Powered-By'         => 'Ratchet'
+            , 'Connection'           => 'Upgrade'
+            , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
+            , 'X-Powered-By'         => 'Ratchet'
         ]));
     }
 
