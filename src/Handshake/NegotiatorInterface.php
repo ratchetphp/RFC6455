@@ -31,15 +31,15 @@ interface NegotiatorInterface {
 
     /**
      * Add supported protocols. If the request has any matching the response will include one
-     * @param string $id
+     * @param array $protocols
      */
-    function addSupportedSubProtocol($id);
+    function setSupportedSubProtocols(array $protocols);
 
     /**
      * If enabled and support for a subprotocol has been added handshake
      *  will not upgrade if a match between request and supported subprotocols
      * @param boolean $enable
-     * @todo Consider extending this interface and moving this there. 
+     * @todo Consider extending this interface and moving this there.
      *       The spec does says the server can fail for this reason, but
              it is not a requirement. This is an implementation detail.
      */

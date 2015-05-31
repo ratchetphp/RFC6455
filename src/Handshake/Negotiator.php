@@ -19,6 +19,10 @@ class Negotiator implements NegotiatorInterface {
      */
     private $validator;
 
+    private $_supportedSubProtocols = [];
+
+    private $_strictSubProtocols = true;
+
     public function __construct(ValidatorInterface $validator) {
         $this->verifier = new RequestVerifier;
 
@@ -75,12 +79,27 @@ class Negotiator implements NegotiatorInterface {
             return new Response(426, ['Sec-WebSocket-Version' => $this->getVersionNumber()]);
         }
 
-        return new Response(101, [
+        $headers = [];
+        if (count($this->_supportedSubProtocols) > 0) {
+            $subProtocols = $request->getHeader('Sec-WebSocket-Protocol');
+
+            $match = array_reduce($subProtocols, function($accumulator, $protocol) {
+                return $accumulator ?: (isset($this->_supportedSubProtocols[$protocol]) ? $protocol : null);
+            }, null);
+
+            if ($this->_strictSubProtocols && null === $match) {
+                return new Response(400, [], '1.1', null ,'No Sec-WebSocket-Protocols requested supported');
+            }
+
+            $headers['Sec-WebSocket-Protocol'] = $match;
+        }
+
+        return new Response(101, array_merge($headers, [
             'Upgrade'              => 'websocket'
           , 'Connection'           => 'Upgrade'
           , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
           , 'X-Powered-By'         => 'Ratchet'
-        ]);
+        ]));
     }
 
     /**
@@ -93,13 +112,8 @@ class Negotiator implements NegotiatorInterface {
         return base64_encode(sha1($key . static::GUID, true));
     }
 
-    /**
-     * Add supported protocols. If the request has any matching the response will include one
-     * @param string $id
-     */
-    function addSupportedSubProtocol($id)
-    {
-        // TODO: Implement addSupportedSubProtocol() method.
+    function setSupportedSubProtocols(array $protocols) {
+        $this->_supportedSubProtocols = array_flip($protocols);
     }
 
     /**
@@ -110,8 +124,7 @@ class Negotiator implements NegotiatorInterface {
      *       The spec does says the server can fail for this reason, but
      * it is not a requirement. This is an implementation detail.
      */
-    function setStrictSubProtocolCheck($enable)
-    {
-        // TODO: Implement setStrictSubProtocolCheck() method.
+    function setStrictSubProtocolCheck($enable) {
+        $this->_strictSubProtocols = (boolean)$enable;
     }
 }
