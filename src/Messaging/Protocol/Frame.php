@@ -303,6 +303,16 @@ class Frame implements FrameInterface {
             $payload = substr($this->data, $this->getPayloadStartingByte(), $this->getPayloadLength());
         }
 
+        $len = strlen($payload);
+
+        if (0 === $len) {
+            return '';
+        }
+
+        return $payload ^ str_pad('', $len, $maskingKey, STR_PAD_RIGHT);
+
+        // TODO: Remove this before publish - keeping methods here to compare performance (above is faster but need control against v0.3.3)
+
         $applied = '';
         for ($i = 0, $len = strlen($payload); $i < $len; $i++) {
             $applied .= $payload[$i] ^ $maskingKey[$i % static::MASK_LENGTH];
