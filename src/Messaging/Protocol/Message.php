@@ -35,7 +35,7 @@ class Message implements \IteratorAggregate, MessageInterface {
     }
 
     public function offsetUnset($index) {
-        throw new \DomainException('Frame access in messages is read-only');
+        unset($this->_frames[$index]);
     }
 
     /**

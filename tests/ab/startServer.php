@@ -1,64 +1,9 @@
 <?php
+use Ratchet\RFC6455\Messaging\Protocol\MessageInterface;
+use Ratchet\RFC6455\Messaging\Protocol\FrameInterface;
 use Ratchet\RFC6455\Messaging\Protocol\Frame;
 
 require_once __DIR__ . "/../bootstrap.php";
-
-class ConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\ContextInterface {
-    private $_frame;
-    private $_message;
-
-    /**
-     * @var \React\Http\Response
-     */
-    private $_conn;
-
-    public function __construct(\React\Http\Response $connectionContext) {
-        $this->_conn = $connectionContext;
-    }
-
-    public function setFrame(\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $frame = null) {
-        $this->_frame = $frame;
-
-        return $frame;
-    }
-
-    public function getFrame() {
-        return $this->_frame;
-    }
-
-    public function setMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $message = null) {
-        $this->_message = $message;
-
-        return $message;
-    }
-
-    public function getMessage() {
-        return $this->_message;
-    }
-
-    public function onMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) {
-        $this->_conn->write($msg->getContents());
-    }
-
-    public function onPing(\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $frame) {
-        $pong = new Frame($frame->getPayload(), true, Frame::OP_PONG);
-        $this->_conn->write($pong->getContents());
-    }
-
-    public function onPong(\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $msg) {
-        // TODO: Implement onPong() method.
-    }
-
-    public function onClose($code = 1000) {
-        $frame = new Frame(
-            pack('n', $code),
-            true,
-            Frame::OP_CLOSE
-        );
-
-        $this->_conn->end($frame->getContents());
-    }
-}
 
 $loop   = \React\EventLoop\Factory::create();
 $socket = new \React\Socket\Server($loop);
@@ -69,9 +14,6 @@ $negotiator = new \Ratchet\RFC6455\Handshake\Negotiator($encodingValidator);
 $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($encodingValidator);
 
 $server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $ms) {
-    $conn = new ConnectionContext($response);
-
-    // make the React Request a Psr7 request (not perfect)
     $psrRequest = new \GuzzleHttp\Psr7\Request($request->getMethod(), $request->getPath(), $request->getHeaders());
 
     $negotiatorResponse = $negotiator->handshake($psrRequest);
@@ -89,8 +31,20 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
         return;
     }
 
-    $request->on('data', function ($data) use ($ms, $conn) {
-        $ms->onData($data, $conn);
+    $msg = null;
+    $request->on('data', function($data) use ($ms, $response, &$msg) {
+        $msg = $ms->onData($data, $response, $msg, function(MessageInterface $msg, \React\Http\Response $conn) {
+            $conn->write($msg->getContents());
+        }, function(FrameInterface $frame, \React\Http\Response $conn) use ($ms) {
+            switch ($frame->getOpCode()) {
+                case Frame::OP_CLOSE:
+                    $conn->end($frame->getContents());
+                break;
+                case Frame::OP_PING:
+                    $conn->write($ms->newFrame($frame->getPayload(), true, Frame::OP_PONG)->getContents());
+                break;
+            }
+        });
     });
 });
 $socket->listen(9001, '0.0.0.0');

@@ -71,7 +71,7 @@ class Frame implements FrameInterface {
      * @param string|null $payload
      * @param bool        $final
      * @param int         $opcode
-     * @param callable    $ufExceptionFactory<\UnderflowException>
+     * @param callable<\UnderflowException> $ufExceptionFactory
      */
     public function __construct($payload = null, $final = true, $opcode = 1, callable $ufExceptionFactory = null) {
         $this->ufeg = $ufExceptionFactory ?: function($msg = '') {
@@ -449,7 +449,6 @@ class Frame implements FrameInterface {
     /**
      * Sometimes clients will concatenate more than one frame over the wire
      * This method will take the extra bytes off the end and return them
-     * @todo Consider returning new Frame
      * @return string
      */
     public function extractOverflow() {
@@ -466,35 +465,5 @@ class Frame implements FrameInterface {
         }
 
         return '';
-    }
-
-    /**
-     * Determine if a close code is valid
-     * @param int|string
-     * @return bool
-     */
-    public function isValidCloseCode($val) {
-        if (in_array($val, [
-            static::CLOSE_NORMAL,
-            static::CLOSE_GOING_AWAY,
-            static::CLOSE_PROTOCOL,
-            static::CLOSE_BAD_DATA,
-            //static::CLOSE_NO_STATUS,
-            //static::CLOSE_ABNORMAL,
-            static::CLOSE_BAD_PAYLOAD,
-            static::CLOSE_POLICY,
-            static::CLOSE_TOO_BIG,
-            static::CLOSE_MAND_EXT,
-            static::CLOSE_SRV_ERR,
-            //static::CLOSE_TLS,
-        ])) {
-            return true;
-        }
-
-        if ($val >= 3000 && $val <= 4999) {
-            return true;
-        }
-
-        return false;
     }
 }
