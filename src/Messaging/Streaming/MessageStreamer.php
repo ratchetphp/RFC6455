@@ -59,7 +59,7 @@ class MessageStreamer {
      * @param callable(FrameInterface)   $onControl
      * @return MessageInterface
      */
-    public function onData($data, $context, MessageInterface $message = null, callable $onMessage, callable $onControl = null) {
+    public function onData($data, MessageInterface $message = null, callable $onMessage, callable $onControl = null, $context = null) {
         $overflow = '';
 
         $onControl ?: $this->noop;
@@ -97,7 +97,7 @@ class MessageStreamer {
                 $overflow = $frame->extractOverflow();
 
                 if (strlen($overflow) > 0) {
-                    $message = $this->onData($overflow, $context, $message, $onMessage, $onControl);
+                    $message = $this->onData($overflow, $message, $onMessage, $onControl, $context);
                 }
 
                 return $message;
@@ -121,7 +121,7 @@ class MessageStreamer {
         }
 
         if (strlen($overflow) > 0) {
-            $this->onData($overflow, $context, $message, $onMessage, $onControl);
+            $this->onData($overflow, $message, $onMessage, $onControl, $context);
         }
 
         return $message;

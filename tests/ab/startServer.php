@@ -33,7 +33,7 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
 
     $msg = null;
     $request->on('data', function($data) use ($ms, $response, &$msg) {
-        $msg = $ms->onData($data, $response, $msg, function(MessageInterface $msg, \React\Http\Response $conn) {
+        $msg = $ms->onData($data, $msg, function(MessageInterface $msg, \React\Http\Response $conn) {
             $conn->write($msg->getContents());
         }, function(FrameInterface $frame, \React\Http\Response $conn) use ($ms) {
             switch ($frame->getOpCode()) {
@@ -44,7 +44,7 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
                     $conn->write($ms->newFrame($frame->getPayload(), true, Frame::OP_PONG)->getContents());
                 break;
             }
-        });
+        }, $response);
     });
 });
 $socket->listen(9001, '0.0.0.0');
