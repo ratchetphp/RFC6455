@@ -30,12 +30,9 @@ class ClientNegotiator implements ClientNegotiatorInterface {
 
     private $websocketKey = '';
 
-    function __construct($path = null)
+    function __construct($path = "ws://127.0.0.1:9001/")
     {
-        if (!is_string($path)) $path = "/";
         $request = new Request("GET", $path);
-
-        $request = $request->withUri(new Uri("ws://127.0.0.1:9001" . $path));
 
         $this->request = $request;
 
@@ -52,8 +49,6 @@ class ClientNegotiator implements ClientNegotiatorInterface {
         }
         $this->request = $this->request->withoutHeader("Sec-WebSocket-Key");
         $this->request = $this->request->withHeader("Sec-WebSocket-Key", $this->websocketKey);
-        $this->request = $this->request->withoutHeader("Host")
-            ->withHeader("Host", $this->request->getUri()->getHost() . ":" . $this->request->getUri()->getPort());
     }
 
     public function getRequest() {
