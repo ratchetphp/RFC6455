@@ -91,10 +91,16 @@ class RequestVerifier {
     /**
      * Verify the Connection header
      * @param  array $connectionHeader MUST include "Upgrade"
+     * @link https://tools.ietf.org/html/rfc6455#section-4.2.1
      * @return bool
      */
     public function verifyConnection(array $connectionHeader) {
-        return (1 === count($connectionHeader) && 'upgrade' === strtolower(($connectionHeader[0])));
+        // Exactly one occurrence of Connection header is allowed
+        if (1 !== count($connectionHeader)) {
+            return false;
+        }
+        // And it must include the token Upgrade (but could contain more tokens)
+        return in_array('upgrade', $this->splitLowercasedValues($connectionHeader[0]));
     }
 
     /**
@@ -127,5 +133,19 @@ class RequestVerifier {
      * @todo Write logic for this method.  See section 4.2.1.9
      */
     public function verifyExtensions($val) {
+    }
+
+    /**
+     * Explodes a comma-separated list of tokens, into an array of trimmed lower-cased items
+     * @param string $headerValueString
+     * @return array
+     */
+    protected function splitLowercasedValues($headerValueString)
+    {
+        return array_map(
+            function ($token) {
+                return trim(strtolower($token));
+            }, preg_split('#, *#', $headerValueString)
+        );
     }
 }
