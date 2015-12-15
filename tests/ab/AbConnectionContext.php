@@ -18,6 +18,7 @@ class AbConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\Context
 
     public function setFrame(\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $frame = null) {
         $this->_frame = $frame;
+        return $frame;
     }
 
     public function getFrame() {
@@ -26,6 +27,7 @@ class AbConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\Context
 
     public function setMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $message = null) {
         $this->_message = $message;
+        return $message;
     }
 
     public function getMessage() {

@@ -30,18 +30,19 @@ class ClientNegotiator implements ClientNegotiatorInterface {
 
     private $websocketKey = '';
 
-    function __construct($path = null)
-    {
-        if (!is_string($path)) $path = "/";
-        $request = new Request("GET", $path);
+    /** @var array */
+    private $subProtocols;
 
-        $request = $request->withUri(new Uri("ws://127.0.0.1:9001" . $path));
+    function __construct($path = "ws://127.0.0.1:9001/", array $subProtocols = [])
+    {
+        $request = new Request("GET", $path);
 
         $this->request = $request;
 
         $this->verifier = new ResponseVerifier();
 
         $this->websocketKey = $this->generateKey();
+        $this->subProtocols = $subProtocols;
     }
 
     public function addRequiredHeaders() {
@@ -50,10 +51,12 @@ class ClientNegotiator implements ClientNegotiatorInterface {
             $this->request = $this->request->withoutHeader($k);
             $this->request = $this->request->withHeader($k, $v);
         }
+        if (!empty($this->subProtocols)) {
+            $this->request = $this->request->withoutHeader('Sec-WebSocket-Protocol');
+            $this->request = $this->request->withHeader('Sec-WebSocket-Protocol', $this->subProtocols);
+        }
         $this->request = $this->request->withoutHeader("Sec-WebSocket-Key");
         $this->request = $this->request->withHeader("Sec-WebSocket-Key", $this->websocketKey);
-        $this->request = $this->request->withoutHeader("Host")
-            ->withHeader("Host", $this->request->getUri()->getHost() . ":" . $this->request->getUri()->getPort());
     }
 
     public function getRequest() {
