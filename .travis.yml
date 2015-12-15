@@ -18,7 +18,7 @@ before_install:
 
 before_script:
     - composer install
-    - sh test/ab/run_ab_tests.sh
+    - sh tests/ab/run_ab_tests.sh
 
 script:
     - phpunit
