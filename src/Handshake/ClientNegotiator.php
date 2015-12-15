@@ -30,7 +30,10 @@ class ClientNegotiator implements ClientNegotiatorInterface {
 
     private $websocketKey = '';
 
-    function __construct($path = "ws://127.0.0.1:9001/")
+    /** @var array */
+    private $subProtocols;
+
+    function __construct($path = "ws://127.0.0.1:9001/", array $subProtocols = [])
     {
         $request = new Request("GET", $path);
 
@@ -39,6 +42,7 @@ class ClientNegotiator implements ClientNegotiatorInterface {
         $this->verifier = new ResponseVerifier();
 
         $this->websocketKey = $this->generateKey();
+        $this->subProtocols = $subProtocols;
     }
 
     public function addRequiredHeaders() {
@@ -46,6 +50,10 @@ class ClientNegotiator implements ClientNegotiatorInterface {
             // remove any header that is there now
             $this->request = $this->request->withoutHeader($k);
             $this->request = $this->request->withHeader($k, $v);
+        }
+        if (!empty($this->subProtocols)) {
+            $this->request = $this->request->withoutHeader('Sec-WebSocket-Protocol');
+            $this->request = $this->request->withHeader('Sec-WebSocket-Protocol', $this->subProtocols);
         }
         $this->request = $this->request->withoutHeader("Sec-WebSocket-Key");
         $this->request = $this->request->withHeader("Sec-WebSocket-Key", $this->websocketKey);

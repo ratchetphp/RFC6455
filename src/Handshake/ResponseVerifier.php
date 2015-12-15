@@ -10,6 +10,7 @@ use GuzzleHttp\Psr7\Response;
 class ResponseVerifier {
     public function verifyAll(Request $request, Response $response) {
         $passes = 0;
+        $required = 5;
 
         $passes += (int)$this->verifyStatus($response->getStatusCode());
         $passes += (int)$this->verifyUpgrade($response->getHeader('Upgrade'));
@@ -18,8 +19,29 @@ class ResponseVerifier {
             $response->getHeader('Sec-WebSocket-Accept'),
             $request->getHeader('sec-websocket-key')
             );
+        $passes += (int)$this->verifySubProtocol($request, $response);
 
-        return (4 == $passes);
+        return ($required == $passes);
+    }
+
+    public function verifySubProtocol(Request $request, Response $response) {
+        $subProtocolRequest = $request->getHeader('Sec-WebSocket-Protocol');
+        if (empty($subProtocolRequest)) {
+            return true;
+        }
+
+        $subProtocolResponse = $response->getHeader('Sec-WebSocket-Protocol');
+        if (count($subProtocolResponse) !== 1) {
+            // there should be exactly one subprotocol sent back if we requested
+            return false;
+        }
+
+        if (in_array($subProtocolResponse[0], $subProtocolRequest)) {
+            // the response is one of the requested subprotocols
+            return true;
+        }
+
+        return false;
     }
 
     public function verifyStatus($status) {
