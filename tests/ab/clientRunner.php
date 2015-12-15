@@ -45,9 +45,10 @@ function getTestCases() {
 
     $deferred = new Deferred();
 
-    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($testServer, $deferred) {
         $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator("/getCaseCount");
         $cnRequest = $cn->getRequest();
+        $cnRequest = $cnRequest->withHeader("Host", $testServer . ":9001");
 
         $rawResponse = "";
         $response = null;
@@ -67,6 +68,7 @@ function getTestCases() {
                     $response = \GuzzleHttp\Psr7\parse_response($rawResponse);
 
                     if (!$cn->validateResponse($response)) {
+                        echo "Connect failed with " . $response->getReasonPhrase() . "\n";
                         $stream->end();
                         $deferred->reject();
                     } else {
@@ -101,9 +103,10 @@ function runTest($case)
 
     $deferred = new Deferred();
 
-    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $testServer, $casePath, $case) {
         $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator($casePath);
         $cnRequest = $cn->getRequest();
+        $cnRequest = $cnRequest->withHeader("Host", $testServer . ":9001");
 
         $rawResponse = "";
         $response = null;
@@ -153,9 +156,10 @@ function createReport() {
 
     $deferred = new Deferred();
 
-    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator('/updateReports?agent=' . AGENT);
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($testServer, $deferred) {
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator('/updateReports?agent=' . AGENT . "&shutdownOnComplete=true");
         $cnRequest = $cn->getRequest();
+        $cnRequest = $cnRequest->withHeader("Host", $testServer . ":9001");
 
         $rawResponse = "";
         $response = null;

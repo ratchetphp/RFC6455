@@ -1,0 +1,13 @@
+{
+   "options": {"failByDrop": false},
+   "outdir": "./reports/servers",
+
+   "servers": [
+                {"agent": "RatchetRFC/0.0.0",
+                 "url": "ws://localhost:9001",
+                 "options": {"version": 18}}
+              ],
+   "cases": ["1.*", "2.*", "3.*", "4.*", "5.*", "6.*", "7.*"],
+   "exclude-cases": [],
+   "exclude-agent-cases": {}
+}

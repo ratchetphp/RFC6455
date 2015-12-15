@@ -61,6 +61,14 @@ class ConnectionContext implements Ratchet\RFC6455\Messaging\Streaming\ContextIn
 }
 
 $loop   = \React\EventLoop\Factory::create();
+
+if ($argc > 1 && is_numeric($argv[1])) {
+    echo "Setting test server to stop in " . $argv[1] . " seconds.\n";
+    $loop->addTimer($argv[1], function () {
+        exit;
+    });
+}
+
 $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
