@@ -53,15 +53,15 @@ class MessageStreamer {
         CloseFrameChecker $frameChecker,
         callable $onMessage,
         callable $onControl = null,
-        $expectMask = true
+        $expectMask = true,
+        $exceptionFactory = null
     ) {
         $this->validator = $encodingValidator;
         $this->closeFrameChecker = $frameChecker;
         $this->checkForMask = (bool)$expectMask;
 
-        $exception = new \UnderflowException;
-        $this->exceptionFactory = function() use ($exception) {
-            return $exception;
+        $this->exceptionFactory ?: $this->exceptionFactory = function($msg) {
+            return new \UnderflowException($msg);
         };
 
         $this->onMessage = $onMessage;

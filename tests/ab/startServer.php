@@ -13,7 +13,9 @@ $encodingValidator = new \Ratchet\RFC6455\Encoding\Validator;
 $closeFrameChecker = new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker;
 $negotiator = new \Ratchet\RFC6455\Handshake\Negotiator($encodingValidator);
 
-$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $encodingValidator, $closeFrameChecker) {
+$uException = new \UnderflowException;
+
+$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $encodingValidator, $closeFrameChecker, $uException) {
     $psrRequest = new \GuzzleHttp\Psr7\Request($request->getMethod(), $request->getPath(), $request->getHeaders());
 
     $negotiatorResponse = $negotiator->handshake($psrRequest);
@@ -42,6 +44,8 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
                 $response->write($parser->newFrame($frame->getPayload(), true, Frame::OP_PONG)->getContents());
                 break;
         }
+    }, true, function() use ($uException) {
+        return $uException;
     });
 
     $request->on('data', [$parser, 'onData']);
