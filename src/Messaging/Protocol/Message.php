@@ -22,22 +22,6 @@ class Message implements \IteratorAggregate, MessageInterface {
         return count($this->_frames);
     }
 
-    public function offsetExists($index) {
-        return $this->_frames->offsetExists($index);
-    }
-
-    public function offsetGet($index) {
-        return $this->_frames->offsetGet($index);
-    }
-
-    public function offsetSet($index, $newval) {
-        throw new \DomainException('Frame access in messages is read-only');
-    }
-
-    public function offsetUnset($index) {
-        unset($this->_frames[$index]);
-    }
-
     /**
      * {@inheritdoc}
      */

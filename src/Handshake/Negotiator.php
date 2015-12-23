@@ -99,9 +99,9 @@ class Negotiator implements NegotiatorInterface {
 
         return new Response(101, array_merge($headers, [
             'Upgrade'              => 'websocket'
-            , 'Connection'           => 'Upgrade'
-            , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
-            , 'X-Powered-By'         => 'Ratchet'
+          , 'Connection'           => 'Upgrade'
+          , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
+          , 'X-Powered-By'         => 'Ratchet'
         ]));
     }
 

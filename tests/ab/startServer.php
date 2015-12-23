@@ -10,10 +10,10 @@ $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
 $encodingValidator = new \Ratchet\RFC6455\Encoding\Validator;
+$closeFrameChecker = new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker;
 $negotiator = new \Ratchet\RFC6455\Handshake\Negotiator($encodingValidator);
-$ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($encodingValidator);
 
-$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $ms) {
+$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $encodingValidator, $closeFrameChecker) {
     $psrRequest = new \GuzzleHttp\Psr7\Request($request->getMethod(), $request->getPath(), $request->getHeaders());
 
     $negotiatorResponse = $negotiator->handshake($psrRequest);
@@ -31,21 +31,21 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
         return;
     }
 
-    $msg = null;
-    $request->on('data', function($data) use ($ms, $response, &$msg) {
-        $msg = $ms->onData($data, $msg, function(MessageInterface $msg, \React\Http\Response $conn) {
-            $conn->write($msg->getContents());
-        }, function(FrameInterface $frame, \React\Http\Response $conn) use ($ms) {
-            switch ($frame->getOpCode()) {
-                case Frame::OP_CLOSE:
-                    $conn->end($frame->getContents());
+    $parser = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($encodingValidator, $closeFrameChecker, function(MessageInterface $message) use ($response) {
+        $response->write($message->getContents());
+    }, function(FrameInterface $frame) use ($response, &$parser) {
+        switch ($frame->getOpCode()) {
+            case Frame::OP_CLOSE:
+                $response->end($frame->getContents());
                 break;
-                case Frame::OP_PING:
-                    $conn->write($ms->newFrame($frame->getPayload(), true, Frame::OP_PONG)->getContents());
+            case Frame::OP_PING:
+                $response->write($parser->newFrame($frame->getPayload(), true, Frame::OP_PONG)->getContents());
                 break;
-            }
-        }, $response);
+        }
     });
+
+    $request->on('data', [$parser, 'onData']);
 });
+
 $socket->listen(9001, '0.0.0.0');
 $loop->run();

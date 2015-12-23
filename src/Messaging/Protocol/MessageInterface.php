@@ -1,7 +1,7 @@
 <?php
 namespace Ratchet\RFC6455\Messaging\Protocol;
 
-interface MessageInterface extends DataInterface, \Traversable, \ArrayAccess, \Countable {
+interface MessageInterface extends DataInterface, \Traversable, \Countable {
     /**
      * @param FrameInterface $fragment
      * @return MessageInterface
