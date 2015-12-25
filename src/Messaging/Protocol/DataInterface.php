@@ -25,4 +25,10 @@ interface DataInterface {
      * @return string
      */
     function getContents();
+
+    /**
+     * Should return the unmasked payload received from peer
+     * @return string
+     */
+    function __toString();
 }

@@ -429,13 +429,7 @@ class Frame implements FrameInterface {
             throw call_user_func($this->ufeg, 'Can not return partial message');
         }
 
-        $payload = substr($this->data, $this->getPayloadStartingByte(), $this->getPayloadLength());
-
-        if ($this->isMasked()) {
-            $payload = $this->applyMask($this->getMaskingKey(), $payload);
-        }
-
-        return $payload;
+        return $this->__toString();
     }
 
     /**
@@ -444,6 +438,16 @@ class Frame implements FrameInterface {
      */
     public function getContents() {
         return substr($this->data, 0, $this->getPayloadStartingByte() + $this->getPayloadLength());
+    }
+
+    public function __toString() {
+        $payload = (string)substr($this->data, $this->getPayloadStartingByte(), $this->getPayloadLength());
+
+        if ($this->isMasked()) {
+            $payload = $this->applyMask($this->getMaskingKey(), $payload);
+        }
+
+        return $payload;
     }
 
     /**

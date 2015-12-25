@@ -78,13 +78,7 @@ class Message implements \IteratorAggregate, MessageInterface {
             throw new \UnderflowException('Message has not been put back together yet');
         }
 
-        $buffer = '';
-
-        foreach ($this->_frames as $frame) {
-            $buffer .= $frame->getPayload();
-        }
-
-        return $buffer;
+        return $this->__toString();
     }
 
     /**
@@ -99,6 +93,16 @@ class Message implements \IteratorAggregate, MessageInterface {
 
         foreach ($this->_frames as $frame) {
             $buffer .= $frame->getContents();
+        }
+
+        return $buffer;
+    }
+
+    public function __toString() {
+        $buffer = '';
+
+        foreach ($this->_frames as $frame) {
+            $buffer .= $frame->getPayload();
         }
 
         return $buffer;
