@@ -26,7 +26,7 @@ class MessageStreamer {
     /**
      * @var \Ratchet\RFC6455\Messaging\Protocol\Message
      */
-    private $messageBuffer = null;
+    private $messageBuffer;
 
     /**
      * @var \Ratchet\RFC6455\Messaging\Protocol\Frame

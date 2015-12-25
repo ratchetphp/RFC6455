@@ -1,8 +1,6 @@
 <?php
 namespace Ratchet\RFC6455\Handshake;
-
 use Psr\Http\Message\RequestInterface;
-
 
 /**
  * These are checks to ensure the client requested handshake are valid
