@@ -54,14 +54,14 @@ class Validator implements ValidatorInterface {
      * @return bool
      */
     public function checkEncoding($str, $against) {
-        if ('UTF-8' == $against) {
+        if ('UTF-8' === $against) {
             return $this->isUtf8($str);
         }
 
         if ($this->hasMbString) {
             return mb_check_encoding($str, $against);
         } elseif ($this->hasIconv) {
-            return ($str == iconv($against, "{$against}//IGNORE", $str));
+            return ($str === iconv($against, "{$against}//IGNORE", $str));
         }
 
         return true;
@@ -73,7 +73,7 @@ class Validator implements ValidatorInterface {
                 return false;
             }
         } elseif ($this->hasIconv) {
-            if ($str != iconv('UTF-8', 'UTF-8//IGNORE', $str)) {
+            if ($str !== iconv('UTF-8', 'UTF-8//IGNORE', $str)) {
                 return false;
             }
         }
