@@ -6,6 +6,14 @@ use Ratchet\RFC6455\Messaging\Protocol\Frame;
 require_once __DIR__ . "/../bootstrap.php";
 
 $loop   = \React\EventLoop\Factory::create();
+
+if ($argc > 1 && is_numeric($argv[1])) {
+    echo "Setting test server to stop in " . $argv[1] . " seconds.\n";
+    $loop->addTimer($argv[1], function () {
+        exit;
+    });
+}
+
 $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
