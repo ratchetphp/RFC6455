@@ -2,7 +2,7 @@
 
 namespace Ratchet\RFC6455\Test;
 
-class AbResultsTest extends TestCase
+class AbResultsTest extends \PHPUnit_Framework_TestCase
 {
     private function verifyAutobahnResults($fileName)
     {
