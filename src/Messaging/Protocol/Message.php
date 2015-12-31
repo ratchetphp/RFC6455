@@ -40,6 +40,8 @@ class Message implements \IteratorAggregate, MessageInterface {
      */
     public function addFrame(FrameInterface $fragment) {
         $this->_frames->push($fragment);
+
+        return $this;
     }
 
     /**
