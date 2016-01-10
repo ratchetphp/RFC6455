@@ -209,8 +209,6 @@ function createReport() {
 $testPromises = [];
 
 getTestCases()->then(function ($count) use ($loop) {
-    echo "Running " . $count . " test cases.\n";
-
     $allDeferred = new Deferred();
 
     $runNextCase = function () use (&$i, &$runNextCase, $count, $allDeferred) {
@@ -219,7 +217,6 @@ getTestCases()->then(function ($count) use ($loop) {
             $allDeferred->resolve();
             return;
         }
-        echo "Running " . $i . "\n";
         runTest($i)->then($runNextCase);
     };
 
@@ -227,7 +224,6 @@ getTestCases()->then(function ($count) use ($loop) {
     $runNextCase();
 
     $allDeferred->promise()->then(function () {
-        echo "Generating report...\n";
         createReport();
     });
 });
