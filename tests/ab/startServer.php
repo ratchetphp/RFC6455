@@ -6,6 +6,7 @@ use Ratchet\RFC6455\Messaging\Protocol\Frame;
 require_once __DIR__ . "/../bootstrap.php";
 
 $loop   = \React\EventLoop\Factory::create();
+
 $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 

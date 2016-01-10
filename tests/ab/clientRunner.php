@@ -4,33 +4,10 @@ use Ratchet\RFC6455\Messaging\Protocol\Frame;
 use Ratchet\RFC6455\Messaging\Protocol\Message;
 
 require __DIR__ . '/../bootstrap.php';
-require __DIR__ . '/AbConnectionContext.php';
 
 define('AGENT', 'RatchetRFC/0.0.0');
 
 $testServer = "127.0.0.1";
-
-
-class EmConnectionContext extends AbConnectionContext implements \Evenement\EventEmitterInterface, Ratchet\RFC6455\Messaging\Streaming\ContextInterface {
-    use \Evenement\EventEmitterTrait;
-
-    public function onMessage(\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) {
-        $this->emit('message', [$msg]);
-    }
-
-    public function sendMessage(Frame $frame) {
-        if ($this->maskPayload) {
-            $frame->maskPayload();
-        }
-        $this->_conn->write($frame->getContents());
-    }
-
-    public function close($closeCode = Frame::CLOSE_NORMAL) {
-        $closeFrame = new Frame(pack('n', $closeCode), true, Frame::OP_CLOSE);
-        $closeFrame->maskPayload();
-        $this->_conn->end($closeFrame->getContents());
-    }
-}
 
 $loop = React\EventLoop\Factory::create();
 
@@ -38,6 +15,32 @@ $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $dnsResolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
 $factory = new \React\SocketClient\Connector($loop, $dnsResolver);
+
+function echoStreamerFactory($conn)
+{
+    return new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
+        new \Ratchet\RFC6455\Encoding\Validator,
+        new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
+        function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($conn) {
+            /** @var Frame $frame */
+            foreach ($msg as $frame) {
+                $frame->maskPayload();
+            }
+            $conn->write($msg->getContents());
+        },
+        function (\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $frame) use ($conn) {
+            switch ($frame->getOpcode()) {
+                case Frame::OP_PING:
+                    return $conn->write((new Frame($frame->getPayload(), true, Frame::OP_PONG))->maskPayload()->getContents());
+                    break;
+                case Frame::OP_CLOSE:
+                    return $conn->end((new Frame($frame->getPayload(), true, Frame::OP_CLOSE))->maskPayload()->getContents());
+                    break;
+            }
+        },
+        false
+    );
+}
 
 function getTestCases() {
     global $factory;
@@ -52,12 +55,10 @@ function getTestCases() {
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(new \Ratchet\RFC6455\Encoding\Validator(), true);
+        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer $ms */
+        $ms = null;
 
-        /** @var EmConnectionContext $context */
-        $context = null;
-
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred, &$context) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -70,19 +71,23 @@ function getTestCases() {
                         $stream->end();
                         $deferred->reject();
                     } else {
-                        $context = new EmConnectionContext($stream, true);
-
-                        $context->on('message', function (Message $msg) use ($stream, $deferred, $context) {
-                            $deferred->resolve($msg->getPayload());
-                            $context->close();
-                        });
+                        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
+                            new \Ratchet\RFC6455\Encoding\Validator,
+                            new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
+                            function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($deferred, $stream) {
+                                $deferred->resolve($msg->getPayload());
+                                $stream->close();
+                            },
+                            null,
+                            false
+                        );
                     }
                 }
             }
 
             // feed the message streamer
-            if ($response && $context) {
-                $ms->onData($data, $context);
+            if ($ms) {
+                $ms->onData($data);
             }
         });
 
@@ -108,12 +113,9 @@ function runTest($case)
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(new \Ratchet\RFC6455\Encoding\Validator(), true);
+        $ms = null;
 
-        /** @var AbConnectionContext $context */
-        $context = null;
-
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred, &$context) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -126,14 +128,14 @@ function runTest($case)
                         $stream->end();
                         $deferred->reject();
                     } else {
-                        $context = new AbConnectionContext($stream, true);
+                        $ms = echoStreamerFactory($stream);
                     }
                 }
             }
 
             // feed the message streamer
-            if ($response && $context) {
-                $ms->onData($data, $context);
+            if ($ms) {
+                $ms->onData($data);
             }
         });
 
@@ -154,18 +156,17 @@ function createReport() {
     $deferred = new Deferred();
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator('/updateReports?agent=' . AGENT);
+        $reportPath = "/updateReports?agent=" . AGENT . "&shutdownOnComplete=true";
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator($reportPath);
         $cnRequest = $cn->getRequest();
 
         $rawResponse = "";
         $response = null;
 
-        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(new \Ratchet\RFC6455\Encoding\Validator(), true);
+        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer $ms */
+        $ms = null;
 
-        /** @var EmConnectionContext $context */
-        $context = null;
-
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, $ms, $cn, $deferred, &$context) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -178,19 +179,23 @@ function createReport() {
                         $stream->end();
                         $deferred->reject();
                     } else {
-                        $context = new EmConnectionContext($stream, true);
-
-                        $context->on('message', function (Message $msg) use ($stream, $deferred, $context) {
-                            $deferred->resolve($msg->getPayload());
-                            $context->close();
-                        });
+                        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
+                            new \Ratchet\RFC6455\Encoding\Validator,
+                            new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
+                            function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($deferred, $stream) {
+                                $deferred->resolve($msg->getPayload());
+                                $stream->close();
+                            },
+                            null,
+                            false
+                        );
                     }
                 }
             }
 
             // feed the message streamer
-            if ($response && $context) {
-                $ms->onData($data, $context);
+            if ($ms) {
+                $ms->onData($data);
             }
         });
 
@@ -204,8 +209,6 @@ function createReport() {
 $testPromises = [];
 
 getTestCases()->then(function ($count) use ($loop) {
-    echo "Running " . $count . " test cases.\n";
-
     $allDeferred = new Deferred();
 
     $runNextCase = function () use (&$i, &$runNextCase, $count, $allDeferred) {
@@ -214,7 +217,6 @@ getTestCases()->then(function ($count) use ($loop) {
             $allDeferred->resolve();
             return;
         }
-        echo "Running " . $i . "\n";
         runTest($i)->then($runNextCase);
     };
 
@@ -222,7 +224,6 @@ getTestCases()->then(function ($count) use ($loop) {
     $runNextCase();
 
     $allDeferred->promise()->then(function () {
-        echo "Generating report...\n";
         createReport();
     });
 });
