@@ -10,13 +10,12 @@ $loop   = \React\EventLoop\Factory::create();
 $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
-$encodingValidator = new \Ratchet\RFC6455\Encoding\Validator;
 $closeFrameChecker = new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker;
-$negotiator = new \Ratchet\RFC6455\Handshake\Negotiator($encodingValidator);
+$negotiator = new \Ratchet\RFC6455\Handshake\Negotiator;
 
 $uException = new \UnderflowException;
 
-$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $encodingValidator, $closeFrameChecker, $uException) {
+$server->on('request', function (\React\Http\Request $request, \React\Http\Response $response) use ($negotiator, $closeFrameChecker, $uException) {
     $psrRequest = new \GuzzleHttp\Psr7\Request($request->getMethod(), $request->getPath(), $request->getHeaders());
 
     $negotiatorResponse = $negotiator->handshake($psrRequest);
@@ -34,7 +33,7 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
         return;
     }
 
-    $parser = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($encodingValidator, $closeFrameChecker, function(MessageInterface $message) use ($response) {
+    $parser = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($closeFrameChecker, function(MessageInterface $message) use ($response) {
         $response->write($message->getContents());
     }, function(FrameInterface $frame) use ($response, &$parser) {
         switch ($frame->getOpCode()) {

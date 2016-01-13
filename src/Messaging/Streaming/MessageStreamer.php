@@ -1,6 +1,5 @@
 <?php
 namespace Ratchet\RFC6455\Messaging\Streaming;
-use Ratchet\RFC6455\Encoding\ValidatorInterface;
 use Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker;
 use Ratchet\RFC6455\Messaging\Protocol\MessageInterface;
 use Ratchet\RFC6455\Messaging\Protocol\FrameInterface;
@@ -8,11 +7,6 @@ use Ratchet\RFC6455\Messaging\Protocol\Message;
 use Ratchet\RFC6455\Messaging\Protocol\Frame;
 
 class MessageStreamer {
-    /**
-     * @var \Ratchet\RFC6455\Encoding\ValidatorInterface
-     */
-    private $validator;
-
     /**
      * @var \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker
      */
@@ -49,14 +43,12 @@ class MessageStreamer {
     private $checkForMask;
 
     function __construct(
-        ValidatorInterface $encodingValidator,
         CloseFrameChecker $frameChecker,
         callable $onMessage,
         callable $onControl = null,
         $expectMask = true,
         $exceptionFactory = null
     ) {
-        $this->validator = $encodingValidator;
         $this->closeFrameChecker = $frameChecker;
         $this->checkForMask = (bool)$expectMask;
 
@@ -166,7 +158,7 @@ class MessageStreamer {
                         return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
                     }
 
-                    if (!$this->validator->checkEncoding(substr($bin, 2), 'UTF-8')) {
+                    if (!preg_match('//u', substr($bin, 2))) {
                         return $this->newCloseFrame(Frame::CLOSE_BAD_PAYLOAD);
                     }
 
@@ -201,7 +193,7 @@ class MessageStreamer {
      */
     public function checkMessage(MessageInterface $message) {
         if (!$message->isBinary()) {
-            if (!$this->validator->checkEncoding($message->getPayload(), 'UTF-8')) {
+            if (!preg_match('//u', $message->getPayload())) {
                 return Frame::CLOSE_BAD_PAYLOAD;
             }
         }

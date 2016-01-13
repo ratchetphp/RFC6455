@@ -19,7 +19,6 @@ $factory = new \React\SocketClient\Connector($loop, $dnsResolver);
 function echoStreamerFactory($conn)
 {
     return new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
-        new \Ratchet\RFC6455\Encoding\Validator,
         new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
         function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($conn) {
             /** @var Frame $frame */
@@ -72,7 +71,6 @@ function getTestCases() {
                         $deferred->reject();
                     } else {
                         $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
-                            new \Ratchet\RFC6455\Encoding\Validator,
                             new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
                             function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($deferred, $stream) {
                                 $deferred->resolve($msg->getPayload());
@@ -180,7 +178,6 @@ function createReport() {
                         $deferred->reject();
                     } else {
                         $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
-                            new \Ratchet\RFC6455\Encoding\Validator,
                             new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
                             function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($deferred, $stream) {
                                 $deferred->resolve($msg->getPayload());
