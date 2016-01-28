@@ -2,7 +2,6 @@
 namespace Ratchet\RFC6455\Handshake;
 use Psr\Http\Message\RequestInterface;
 use GuzzleHttp\Psr7\Response;
-use Ratchet\RFC6455\Encoding\ValidatorInterface;
 
 /**
  * The latest version of the WebSocket protocol
@@ -14,19 +13,12 @@ class Negotiator implements NegotiatorInterface {
      */
     private $verifier;
 
-    /**
-     * @var \Ratchet\RFC6455\Encoding\ValidatorInterface
-     */
-    private $validator;
-
     private $_supportedSubProtocols = [];
 
     private $_strictSubProtocols = true;
 
-    public function __construct(ValidatorInterface $validator) {
+    public function __construct() {
         $this->verifier = new RequestVerifier;
-
-        $this->validator = $validator;
     }
 
     /**
