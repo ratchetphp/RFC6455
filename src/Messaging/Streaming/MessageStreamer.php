@@ -158,7 +158,7 @@ class MessageStreamer {
                         return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
                     }
 
-                    if (!preg_match('//u', substr($bin, 2))) {
+                    if (!$this->checkUtf8(substr($bin, 2))) {
                         return $this->newCloseFrame(Frame::CLOSE_BAD_PAYLOAD);
                     }
 
@@ -193,12 +193,20 @@ class MessageStreamer {
      */
     public function checkMessage(MessageInterface $message) {
         if (!$message->isBinary()) {
-            if (!preg_match('//u', $message->getPayload())) {
+            if (!$this->checkUtf8($message->getPayload())) {
                 return Frame::CLOSE_BAD_PAYLOAD;
             }
         }
 
         return true;
+    }
+
+    private function checkUtf8($string) {
+        if (extension_loaded('mbstring')) {
+            return mb_check_encoding($string, 'UTF-8');
+        }
+
+        return preg_match('//u', $string);
     }
 
     /**
