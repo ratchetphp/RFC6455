@@ -1,14 +1,10 @@
 <?php
-
-
 namespace Ratchet\RFC6455\Handshake;
-
-
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 
 class ResponseVerifier {
-    public function verifyAll(Request $request, Response $response) {
+    public function verifyAll(RequestInterface $request, ResponseInterface $response) {
         $passes = 0;
 
         $passes += (int)$this->verifyStatus($response->getStatusCode());

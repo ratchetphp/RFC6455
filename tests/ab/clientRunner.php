@@ -1,7 +1,7 @@
 <?php
+use GuzzleHttp\Psr7\Uri;
 use React\Promise\Deferred;
 use Ratchet\RFC6455\Messaging\Protocol\Frame;
-use Ratchet\RFC6455\Messaging\Protocol\Message;
 
 require __DIR__ . '/../bootstrap.php';
 
@@ -48,8 +48,8 @@ function getTestCases() {
     $deferred = new Deferred();
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator("/getCaseCount");
-        $cnRequest = $cn->getRequest();
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+        $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001/getCaseCount'));
 
         $rawResponse = "";
         $response = null;
@@ -57,7 +57,7 @@ function getTestCases() {
         /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer $ms */
         $ms = null;
 
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -66,7 +66,7 @@ function getTestCases() {
                     $rawResponse = substr($rawResponse, 0, $pos + 4);
                     $response = \GuzzleHttp\Psr7\parse_response($rawResponse);
 
-                    if (!$cn->validateResponse($response)) {
+                    if (!$cn->validateResponse($cnRequest, $response)) {
                         $stream->end();
                         $deferred->reject();
                     } else {
@@ -105,15 +105,15 @@ function runTest($case)
     $deferred = new Deferred();
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator($casePath);
-        $cnRequest = $cn->getRequest();
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+        $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
         $rawResponse = "";
         $response = null;
 
         $ms = null;
 
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -122,7 +122,7 @@ function runTest($case)
                     $rawResponse = substr($rawResponse, 0, $pos + 4);
                     $response = \GuzzleHttp\Psr7\parse_response($rawResponse);
 
-                    if (!$cn->validateResponse($response)) {
+                    if (!$cn->validateResponse($cnRequest, $response)) {
                         $stream->end();
                         $deferred->reject();
                     } else {
@@ -155,8 +155,8 @@ function createReport() {
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
         $reportPath = "/updateReports?agent=" . AGENT . "&shutdownOnComplete=true";
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator($reportPath);
-        $cnRequest = $cn->getRequest();
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+        $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $reportPath));
 
         $rawResponse = "";
         $response = null;
@@ -164,7 +164,7 @@ function createReport() {
         /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer $ms */
         $ms = null;
 
-        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context) {
+        $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {
             if ($response === null) {
                 $rawResponse .= $data;
                 $pos = strpos($rawResponse, "\r\n\r\n");
@@ -173,7 +173,7 @@ function createReport() {
                     $rawResponse = substr($rawResponse, 0, $pos + 4);
                     $response = \GuzzleHttp\Psr7\parse_response($rawResponse);
 
-                    if (!$cn->validateResponse($response)) {
+                    if (!$cn->validateResponse($cnRequest, $response)) {
                         $stream->end();
                         $deferred->reject();
                     } else {
