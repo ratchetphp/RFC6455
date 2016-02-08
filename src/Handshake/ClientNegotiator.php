@@ -5,7 +5,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 use GuzzleHttp\Psr7\Request;
 
-class ClientNegotiator implements ClientNegotiatorInterface {
+class ClientNegotiator {
     /**
      * @var ResponseVerifier
      */
@@ -22,7 +22,7 @@ class ClientNegotiator implements ClientNegotiatorInterface {
         $this->defaultHeader = new Request('GET', '', [
             'Connection'            => 'Upgrade'
           , 'Upgrade'               => 'websocket'
-          , 'Sec-WebSocket-Version' => 13
+          , 'Sec-WebSocket-Version' => $this->getVersion()
           , 'User-Agent'            => "RatchetRFC/0.0.0"
         ]);
     }
@@ -48,4 +48,7 @@ class ClientNegotiator implements ClientNegotiatorInterface {
         return base64_encode($key);
     }
 
-} 
+    public function getVersion() {
+        return 13;
+    }
+}

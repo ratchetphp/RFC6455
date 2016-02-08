@@ -11,15 +11,15 @@ class ResponseVerifier {
         $passes += (int)$this->verifyUpgrade($response->getHeader('Upgrade'));
         $passes += (int)$this->verifyConnection($response->getHeader('Connection'));
         $passes += (int)$this->verifySecWebSocketAccept(
-            $response->getHeader('Sec-WebSocket-Accept'),
-            $request->getHeader('sec-websocket-key')
-            );
+            $response->getHeader('Sec-WebSocket-Accept')
+          , $request->getHeader('Sec-WebSocket-Accept')
+        );
 
-        return (4 == $passes);
+        return (4 === $passes);
     }
 
     public function verifyStatus($status) {
-        return ($status == 101);
+        return ((int)$status === 101);
     }
 
     public function verifyUpgrade(array $upgrade) {
@@ -34,10 +34,10 @@ class ResponseVerifier {
         return (
             1 === count($swa) &&
             1 === count($key) &&
-            $swa[0] == $this->sign($key[0]));
+            $swa[0] === $this->sign($key[0]));
     }
 
     public function sign($key) {
-        return base64_encode(sha1($key . Negotiator::GUID, true));
+        return base64_encode(sha1($key . NegotiatorInterface::GUID, true));
     }
 }
