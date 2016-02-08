@@ -14,7 +14,7 @@ class ClientNegotiator {
     /**
      * @var \Psr\Http\Message\RequestInterface
      */
-    public $defaultHeader;
+    private $defaultHeader;
 
     function __construct() {
         $this->verifier = new ResponseVerifier;
@@ -29,7 +29,6 @@ class ClientNegotiator {
 
     public function generateRequest(UriInterface $uri) {
         return $this->defaultHeader->withUri($uri)
-            ->withoutHeader("Sec-WebSocket-Key")
             ->withHeader("Sec-WebSocket-Key", $this->generateKey());
     }
 
