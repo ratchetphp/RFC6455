@@ -34,7 +34,8 @@ class ResponseVerifier {
         return (
             1 === count($swa) &&
             1 === count($key) &&
-            $swa[0] === $this->sign($key[0]));
+            $swa[0] === $this->sign($key[0])
+        );
     }
 
     public function sign($key) {
