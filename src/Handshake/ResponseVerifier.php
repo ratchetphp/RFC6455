@@ -12,7 +12,7 @@ class ResponseVerifier {
         $passes += (int)$this->verifyConnection($response->getHeader('Connection'));
         $passes += (int)$this->verifySecWebSocketAccept(
             $response->getHeader('Sec-WebSocket-Accept')
-          , $request->getHeader('Sec-WebSocket-Accept')
+          , $request->getHeader('Sec-WebSocket-Key')
         );
 
         return (4 === $passes);
