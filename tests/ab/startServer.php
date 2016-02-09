@@ -1,7 +1,7 @@
 <?php
-use Ratchet\RFC6455\Messaging\Protocol\MessageInterface;
-use Ratchet\RFC6455\Messaging\Protocol\FrameInterface;
-use Ratchet\RFC6455\Messaging\Protocol\Frame;
+use Ratchet\RFC6455\Messaging\MessageInterface;
+use Ratchet\RFC6455\Messaging\FrameInterface;
+use Ratchet\RFC6455\Messaging\Frame;
 
 require_once __DIR__ . "/../bootstrap.php";
 
@@ -10,7 +10,7 @@ $loop   = \React\EventLoop\Factory::create();
 $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
-$closeFrameChecker = new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker;
+$closeFrameChecker = new \Ratchet\RFC6455\Messaging\CloseFrameChecker;
 $negotiator = new \Ratchet\RFC6455\Handshake\Negotiator;
 
 $uException = new \UnderflowException;
@@ -33,7 +33,7 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
         return;
     }
 
-    $parser = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer($closeFrameChecker, function(MessageInterface $message) use ($response) {
+    $parser = new \Ratchet\RFC6455\Messaging\MessageBuffer($closeFrameChecker, function(MessageInterface $message) use ($response) {
         $response->write($message->getContents());
     }, function(FrameInterface $frame) use ($response, &$parser) {
         switch ($frame->getOpCode()) {

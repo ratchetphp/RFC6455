@@ -1,7 +1,7 @@
 <?php
 use GuzzleHttp\Psr7\Uri;
 use React\Promise\Deferred;
-use Ratchet\RFC6455\Messaging\Protocol\Frame;
+use Ratchet\RFC6455\Messaging\Frame;
 
 require __DIR__ . '/../bootstrap.php';
 
@@ -18,16 +18,16 @@ $factory = new \React\SocketClient\Connector($loop, $dnsResolver);
 
 function echoStreamerFactory($conn)
 {
-    return new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
-        new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
-        function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($conn) {
+    return new \Ratchet\RFC6455\Messaging\MessageBuffer(
+        new \Ratchet\RFC6455\Messaging\CloseFrameChecker,
+        function (\Ratchet\RFC6455\Messaging\MessageInterface $msg) use ($conn) {
             /** @var Frame $frame */
             foreach ($msg as $frame) {
                 $frame->maskPayload();
             }
             $conn->write($msg->getContents());
         },
-        function (\Ratchet\RFC6455\Messaging\Protocol\FrameInterface $frame) use ($conn) {
+        function (\Ratchet\RFC6455\Messaging\FrameInterface $frame) use ($conn) {
             switch ($frame->getOpcode()) {
                 case Frame::OP_PING:
                     return $conn->write((new Frame($frame->getPayload(), true, Frame::OP_PONG))->maskPayload()->getContents());
@@ -54,7 +54,7 @@ function getTestCases() {
         $rawResponse = "";
         $response = null;
 
-        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer $ms */
+        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageBuffer $ms */
         $ms = null;
 
         $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {
@@ -70,9 +70,9 @@ function getTestCases() {
                         $stream->end();
                         $deferred->reject();
                     } else {
-                        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
-                            new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
-                            function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($deferred, $stream) {
+                        $ms = new \Ratchet\RFC6455\Messaging\MessageBuffer(
+                            new \Ratchet\RFC6455\Messaging\CloseFrameChecker,
+                            function (\Ratchet\RFC6455\Messaging\MessageInterface $msg) use ($deferred, $stream) {
                                 $deferred->resolve($msg->getPayload());
                                 $stream->close();
                             },
@@ -161,7 +161,7 @@ function createReport() {
         $rawResponse = "";
         $response = null;
 
-        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer $ms */
+        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageBuffer $ms */
         $ms = null;
 
         $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {
@@ -177,9 +177,9 @@ function createReport() {
                         $stream->end();
                         $deferred->reject();
                     } else {
-                        $ms = new \Ratchet\RFC6455\Messaging\Streaming\MessageStreamer(
-                            new \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker,
-                            function (\Ratchet\RFC6455\Messaging\Protocol\MessageInterface $msg) use ($deferred, $stream) {
+                        $ms = new \Ratchet\RFC6455\Messaging\MessageBuffer(
+                            new \Ratchet\RFC6455\Messaging\CloseFrameChecker,
+                            function (\Ratchet\RFC6455\Messaging\MessageInterface $msg) use ($deferred, $stream) {
                                 $deferred->resolve($msg->getPayload());
                                 $stream->close();
                             },

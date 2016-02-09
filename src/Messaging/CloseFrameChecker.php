@@ -1,8 +1,8 @@
 <?php
-namespace Ratchet\RFC6455\Messaging\Protocol;
+namespace Ratchet\RFC6455\Messaging;
 
 class CloseFrameChecker {
-    private $validCloseFrames = [];
+    private $validCloseCodes = [];
 
     public function __construct() {
         $this->validCloseCodes = [

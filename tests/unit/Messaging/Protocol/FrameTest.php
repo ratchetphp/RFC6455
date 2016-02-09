@@ -1,9 +1,9 @@
 <?php
-namespace Ratchet\RFC6455\Test\Unit\Messaging\Protocol;
-use Ratchet\RFC6455\Messaging\Protocol\Frame;
+namespace Ratchet\RFC6455\Test\Unit\Messaging;
+use Ratchet\RFC6455\Messaging\Frame;
 
 /**
- * @covers Ratchet\RFC6455\Messaging\Protocol\Frame
+ * @covers Ratchet\RFC6455\MessagingFrame
  * @todo getMaskingKey, getPayloadStartingByte don't have tests yet
  * @todo Could use some clean up in general, I had to rush to fix a bug for a deadline, sorry.
  */

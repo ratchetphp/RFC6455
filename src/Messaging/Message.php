@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\RFC6455\Messaging\Protocol;
+namespace Ratchet\RFC6455\Messaging;
 
 class Message implements \IteratorAggregate, MessageInterface {
     /**
