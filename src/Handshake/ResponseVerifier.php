@@ -14,8 +14,12 @@ class ResponseVerifier {
             $response->getHeader('Sec-WebSocket-Accept')
           , $request->getHeader('Sec-WebSocket-Key')
         );
+        $passes += (int)$this->verifySubProtocol(
+            $request->getHeader('Sec-WebSocket-Protocol')
+          , $response->getHeader('Sec-WebSocket-Protocol')
+        );
 
-        return (4 === $passes);
+        return (5 === $passes);
     }
 
     public function verifyStatus($status) {
@@ -40,5 +44,9 @@ class ResponseVerifier {
 
     public function sign($key) {
         return base64_encode(sha1($key . NegotiatorInterface::GUID, true));
+    }
+
+    public function verifySubProtocol(array $requestHeader, array $responseHeader) {
+        return 0 === count($responseHeader) || count(array_intersect($responseHeader, $requestHeader)) > 0;
     }
 }
