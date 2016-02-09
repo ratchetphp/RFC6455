@@ -1,84 +1,53 @@
 <?php
-
-
 namespace Ratchet\RFC6455\Handshake;
-
-
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
+use GuzzleHttp\Psr7\Request;
 
-class ClientNegotiator implements ClientNegotiatorInterface {
-    public $defaultHeaders = [
-        'Connection'            => 'Upgrade'
-        , 'Cache-Control'         => 'no-cache'
-        , 'Pragma'                => 'no-cache'
-        , 'Upgrade'               => 'websocket'
-        , 'Sec-WebSocket-Version' => 13
-        , 'User-Agent'            => "RatchetRFC/0.0.0"
-    ];
+class ClientNegotiator {
+    /**
+     * @var ResponseVerifier
+     */
+    private $verifier;
 
-    /** @var  Request */
-    public $request;
+    /**
+     * @var \Psr\Http\Message\RequestInterface
+     */
+    private $defaultHeader;
 
-    /** @var  Response */
-    public $response;
+    function __construct() {
+        $this->verifier = new ResponseVerifier;
 
-    /** @var  ResponseVerifier */
-    public $verifier;
-
-    private $websocketKey = '';
-
-    function __construct($path = null)
-    {
-        if (!is_string($path)) $path = "/";
-        $request = new Request("GET", $path);
-
-        $request = $request->withUri(new Uri("ws://127.0.0.1:9001" . $path));
-
-        $this->request = $request;
-
-        $this->verifier = new ResponseVerifier();
-
-        $this->websocketKey = $this->generateKey();
+        $this->defaultHeader = new Request('GET', '', [
+            'Connection'            => 'Upgrade'
+          , 'Upgrade'               => 'websocket'
+          , 'Sec-WebSocket-Version' => $this->getVersion()
+          , 'User-Agent'            => "RatchetRFC/0.0.0"
+        ]);
     }
 
-    public function addRequiredHeaders() {
-        foreach ($this->defaultHeaders as $k => $v) {
-            // remove any header that is there now
-            $this->request = $this->request->withoutHeader($k);
-            $this->request = $this->request->withHeader($k, $v);
-        }
-        $this->request = $this->request->withoutHeader("Sec-WebSocket-Key");
-        $this->request = $this->request->withHeader("Sec-WebSocket-Key", $this->websocketKey);
-        $this->request = $this->request->withoutHeader("Host")
-            ->withHeader("Host", $this->request->getUri()->getHost() . ":" . $this->request->getUri()->getPort());
+    public function generateRequest(UriInterface $uri) {
+        return $this->defaultHeader->withUri($uri)
+            ->withHeader("Sec-WebSocket-Key", $this->generateKey());
     }
 
-    public function getRequest() {
-        $this->addRequiredHeaders();
-        return $this->request;
+    public function validateResponse(RequestInterface $request, ResponseInterface $response) {
+        return $this->verifier->verifyAll($request, $response);
     }
 
-    public function getResponse() {
-        return $this->response;
-    }
-
-    public function validateResponse(Response $response) {
-        $this->response = $response;
-
-        return $this->verifier->verifyAll($this->getRequest(), $response);
-    }
-
-    protected function generateKey() {
+    public function generateKey() {
         $chars     = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwzyz1234567890+/=';
         $charRange = strlen($chars) - 1;
         $key       = '';
-        for ($i = 0;$i < 16;$i++) {
+        for ($i = 0; $i < 16; $i++) {
             $key .= $chars[mt_rand(0, $charRange)];
         }
+
         return base64_encode($key);
     }
 
-} 
+    public function getVersion() {
+        return 13;
+    }
+}

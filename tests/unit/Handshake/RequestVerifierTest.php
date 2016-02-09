@@ -1,11 +1,9 @@
 <?php
-
 namespace Ratchet\RFC6455\Test\Unit\Handshake;
-
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 
 /**
- * covers Ratchet\WebSocket\Version\RFC6455\HandshakeVerifier
+ * @covers Ratchet\RFC6455\Handshake\RequestVerifier
  */
 class RequestVerifierTest extends \PHPUnit_Framework_TestCase {
     /**

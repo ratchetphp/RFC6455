@@ -1,12 +1,10 @@
 <?php
-
 namespace Ratchet\RFC6455\Test\Unit\Messaging\Protocol;
-
 use Ratchet\RFC6455\Messaging\Protocol\Frame;
 use Ratchet\RFC6455\Messaging\Protocol\Message;
 
 /**
- * covers Ratchet\WebSocket\Version\RFC6455\Message
+ * @covers Ratchet\RFC6455\Messaging\Protocol\Message
  */
 class MessageTest extends \PHPUnit_Framework_TestCase {
     /** @var Message */
