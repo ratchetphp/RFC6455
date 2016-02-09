@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\RFC6455\Messaging\Protocol;
+namespace Ratchet\RFC6455\Messaging;
 
 interface FrameInterface extends DataInterface {
     /**

@@ -1,14 +1,9 @@
 <?php
-namespace Ratchet\RFC6455\Messaging\Streaming;
-use Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker;
-use Ratchet\RFC6455\Messaging\Protocol\MessageInterface;
-use Ratchet\RFC6455\Messaging\Protocol\FrameInterface;
-use Ratchet\RFC6455\Messaging\Protocol\Message;
-use Ratchet\RFC6455\Messaging\Protocol\Frame;
+namespace Ratchet\RFC6455\Messaging;
 
-class MessageStreamer {
+class MessageBuffer {
     /**
-     * @var \Ratchet\RFC6455\Messaging\Protocol\CloseFrameChecker
+     * @var \Ratchet\RFC6455\Messaging\CloseFrameChecker
      */
     private $closeFrameChecker;
 
@@ -18,12 +13,12 @@ class MessageStreamer {
     private $exceptionFactory;
 
     /**
-     * @var \Ratchet\RFC6455\Messaging\Protocol\Message
+     * @var \Ratchet\RFC6455\Messaging\Message
      */
     private $messageBuffer;
 
     /**
-     * @var \Ratchet\RFC6455\Messaging\Protocol\Frame
+     * @var \Ratchet\RFC6455\Messaging\Frame
      */
     private $frameBuffer;
 
@@ -113,8 +108,8 @@ class MessageStreamer {
 
     /**
      * Check a frame to be added to the current message buffer
-     * @param \Ratchet\RFC6455\Messaging\Protocol\FrameInterface|FrameInterface $frame
-     * @return \Ratchet\RFC6455\Messaging\Protocol\FrameInterface|FrameInterface
+     * @param \Ratchet\RFC6455\Messaging\FrameInterface|FrameInterface $frame
+     * @return \Ratchet\RFC6455\Messaging\FrameInterface|FrameInterface
      */
     public function frameCheck(FrameInterface $frame) {
         if (false !== $frame->getRsv1() ||
@@ -188,7 +183,7 @@ class MessageStreamer {
 
     /**
      * Determine if a message is valid
-     * @param \Ratchet\RFC6455\Messaging\Protocol\MessageInterface
+     * @param \Ratchet\RFC6455\Messaging\MessageInterface
      * @return bool|int true if valid - false if incomplete - int of recommended close code
      */
     public function checkMessage(MessageInterface $message) {
@@ -210,7 +205,7 @@ class MessageStreamer {
     }
 
     /**
-     * @return \Ratchet\RFC6455\Messaging\Protocol\MessageInterface
+     * @return \Ratchet\RFC6455\Messaging\MessageInterface
      */
     public function newMessage() {
         return new Message;
@@ -220,7 +215,7 @@ class MessageStreamer {
      * @param string|null $payload
      * @param bool|null   $final
      * @param int|null    $opcode
-     * @return \Ratchet\RFC6455\Messaging\Protocol\FrameInterface
+     * @return \Ratchet\RFC6455\Messaging\FrameInterface
      */
     public function newFrame($payload = null, $final = null, $opcode = null) {
         return new Frame($payload, $final, $opcode, $this->exceptionFactory);

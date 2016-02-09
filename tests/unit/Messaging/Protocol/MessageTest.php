@@ -1,10 +1,10 @@
 <?php
-namespace Ratchet\RFC6455\Test\Unit\Messaging\Protocol;
-use Ratchet\RFC6455\Messaging\Protocol\Frame;
-use Ratchet\RFC6455\Messaging\Protocol\Message;
+namespace Ratchet\RFC6455\Test\Unit\Messaging;
+use Ratchet\RFC6455\Messaging\Frame;
+use Ratchet\RFC6455\Messaging\Message;
 
 /**
- * @covers Ratchet\RFC6455\Messaging\Protocol\Message
+ * @covers Ratchet\RFC6455\Messaging\Message
  */
 class MessageTest extends \PHPUnit_Framework_TestCase {
     /** @var Message */
