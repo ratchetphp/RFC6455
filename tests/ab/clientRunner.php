@@ -161,7 +161,7 @@ function createReport() {
         $rawResponse = "";
         $response = null;
 
-        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageBuffer $ms */
+        /** @var \Ratchet\RFC6455\Messaging\MessageBuffer $ms */
         $ms = null;
 
         $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {

@@ -1,13 +1,12 @@
 # RFC6455 - The WebSocket Protocol
 
-This library is meant to be a protocol handler for the RFC6455 specification.
+[![Build Status](https://travis-ci.org/ratchetphp/RFC6455.svg?branch=master)](https://travis-ci.org/ratchetphp/RFC6455)
 
----
+This library a protocol handler for the RFC6455 specification. 
+It contains components for both server and client side handshake and messaging protocol negotation. 
 
-### A rough roadmap
+Aspects that are left open to interpertation in the specification are also left open in this library. 
+It is up to the implementation to determine how those interpertations are to be dealt with. 
 
-* v0.1 is the initial split from Ratchet/v0.3.2 as-is. In this state it currently relies on some of Ratchet's interfaces.
-* v0.2 will be more framework agnostic and will not require any interfaces from Ratchet. A dependency on Guzzle (or hopefully PSR-7) may be required.
-* v0.3 will look into performance tuning. No more expected exceptions.
-* v0.4 extension support
-* v1.0 when all the bases are covered
+This library is independent, framework agnostic, and does not deal with any I/O. 
+HTTP upgrade negotiation integration points are handled with PSR-7 interfaces. 
