@@ -11,7 +11,7 @@ $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
 $closeFrameChecker = new \Ratchet\RFC6455\Messaging\CloseFrameChecker;
-$negotiator = new \Ratchet\RFC6455\Handshake\Negotiator;
+$negotiator = new \Ratchet\RFC6455\Handshake\ServerNegotiator;
 
 $uException = new \UnderflowException;
 

@@ -7,7 +7,7 @@ use GuzzleHttp\Psr7\Response;
  * The latest version of the WebSocket protocol
  * @todo Unicode: return mb_convert_encoding(pack("N",$u), mb_internal_encoding(), 'UCS-4BE');
  */
-class Negotiator implements NegotiatorInterface {
+class ServerNegotiator implements NegotiatorInterface {
     /**
      * @var \Ratchet\RFC6455\Handshake\RequestVerifier
      */
