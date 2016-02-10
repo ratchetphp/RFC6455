@@ -11,9 +11,9 @@
       , "role": "Developer"
     }],
     "support": {
-      , "forum": "https://groups.google.com/forum/#!forum/ratchet-php"
+        "forum": "https://groups.google.com/forum/#!forum/ratchet-php"
       , "issues": "https://github.com/ratchetphp/RFC6455/issues"
-        "irc": "irc://irc.freenode.org/reactphp"
+      , "irc": "irc://irc.freenode.org/reactphp"
     },
     "autoload": {
         "psr-4": {
