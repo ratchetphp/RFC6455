@@ -1,16 +1,18 @@
 <?php
-namespace Ratchet\WebSocket\Version\RFC6455;
-use Ratchet\WebSocket\Version\MessageInterface;
-use Ratchet\WebSocket\Version\FrameInterface;
+namespace Ratchet\RFC6455\Messaging;
 
-class Message implements MessageInterface, \Countable {
+class Message implements \IteratorAggregate, MessageInterface {
     /**
      * @var \SplDoublyLinkedList
      */
-    protected $_frames;
+    private $_frames;
 
     public function __construct() {
         $this->_frames = new \SplDoublyLinkedList;
+    }
+
+    public function getIterator() {
+        return $this->_frames;
     }
 
     /**
@@ -35,7 +37,6 @@ class Message implements MessageInterface, \Countable {
 
     /**
      * {@inheritdoc}
-     * @todo Also, I should perhaps check the type...control frames (ping/pong/close) are not to be considered part of a message
      */
     public function addFrame(FrameInterface $fragment) {
         $this->_frames->push($fragment);
@@ -79,13 +80,7 @@ class Message implements MessageInterface, \Countable {
             throw new \UnderflowException('Message has not been put back together yet');
         }
 
-        $buffer = '';
-
-        foreach ($this->_frames as $frame) {
-            $buffer .= $frame->getPayload();
-        }
-
-        return $buffer;
+        return $this->__toString();
     }
 
     /**
@@ -103,5 +98,26 @@ class Message implements MessageInterface, \Countable {
         }
 
         return $buffer;
+    }
+
+    public function __toString() {
+        $buffer = '';
+
+        foreach ($this->_frames as $frame) {
+            $buffer .= $frame->getPayload();
+        }
+
+        return $buffer;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isBinary() {
+        if ($this->_frames->isEmpty()) {
+            throw new \UnderflowException('Not enough data has been received to determine if message is binary');
+        }
+
+        return Frame::OP_BINARY === $this->_frames->bottom()->getOpcode();
     }
 }

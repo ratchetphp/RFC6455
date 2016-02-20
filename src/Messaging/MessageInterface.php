@@ -1,7 +1,7 @@
 <?php
-namespace Ratchet\WebSocket\Version;
+namespace Ratchet\RFC6455\Messaging;
 
-interface MessageInterface extends DataInterface {
+interface MessageInterface extends DataInterface, \Traversable, \Countable {
     /**
      * @param FrameInterface $fragment
      * @return MessageInterface
@@ -12,4 +12,9 @@ interface MessageInterface extends DataInterface {
      * @return int
      */
     function getOpcode();
+
+    /**
+     * @return bool
+     */
+    function isBinary();
 }

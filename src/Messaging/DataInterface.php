@@ -1,5 +1,5 @@
 <?php
-namespace Ratchet\WebSocket\Version;
+namespace Ratchet\RFC6455\Messaging;
 
 interface DataInterface {
     /**
@@ -25,4 +25,10 @@ interface DataInterface {
      * @return string
      */
     function getContents();
+
+    /**
+     * Should return the unmasked payload received from peer
+     * @return string
+     */
+    function __toString();
 }
