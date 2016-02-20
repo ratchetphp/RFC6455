@@ -15,7 +15,7 @@ class ServerNegotiator implements NegotiatorInterface {
 
     private $_supportedSubProtocols = [];
 
-    private $_strictSubProtocols = true;
+    private $_strictSubProtocols = false;
 
     public function __construct(RequestVerifier $requestVerifier) {
         $this->verifier = $requestVerifier;
