@@ -1,7 +1,7 @@
 {
     "name": "ratchet/rfc6455",
     "type": "library",
-    "description": "RFC6455 protocol handler",
+    "description": "RFC6455 WebSocket protocol handler",
     "keywords": ["WebSockets", "websocket", "RFC6455"],
     "homepage": "http://socketo.me",
     "license": "MIT",

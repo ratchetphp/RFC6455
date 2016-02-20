@@ -3,7 +3,7 @@ namespace Ratchet\RFC6455\Test\Unit\Handshake;
 use Ratchet\RFC6455\Handshake\ResponseVerifier;
 
 /**
- * @covers Ratchet\WebSocket\Version\RFC6455\ResponseVerifier
+ * @covers Ratchet\RFC6455\Handshake\ResponseVerifier
  */
 class ResponseVerifierTest extends \PHPUnit_Framework_TestCase {
     /**
