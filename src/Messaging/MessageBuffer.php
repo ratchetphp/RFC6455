@@ -157,7 +157,7 @@ class MessageBuffer {
                         return $this->newCloseFrame(Frame::CLOSE_BAD_PAYLOAD);
                     }
 
-                    return $this->newCloseFrame(Frame::CLOSE_NORMAL);
+                    return $this->newCloseFrame($closeCode);
                     break;
                 case Frame::OP_PING:
                 case Frame::OP_PONG:
