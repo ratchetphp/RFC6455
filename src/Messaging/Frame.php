@@ -182,7 +182,7 @@ class Frame implements FrameInterface {
             throw call_user_func($this->ufeg, 'Not enough bytes received to determine reserved bit');
         }
 
-        return 16 == ($this->firstByte & 16);
+        return 16 === ($this->firstByte & 16);
     }
 
     /**

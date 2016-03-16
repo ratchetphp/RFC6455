@@ -93,7 +93,7 @@ class MessageBuffer {
         if ($this->messageBuffer->isCoalesced()) {
             $msgCheck = $this->checkMessage($this->messageBuffer);
             if (true !== $msgCheck) {
-                $onControl($this->newCloseFrame($msgCheck));
+                $onControl($this->newCloseFrame($msgCheck, 'Ratchet detected an invalid UTF-8 payload'));
             } else {
                 $onMessage($this->messageBuffer);
             }
@@ -116,18 +116,18 @@ class MessageBuffer {
             false !== $frame->getRsv2() ||
             false !== $frame->getRsv3()
         ) {
-            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected an invalid reserve code');
         }
 
         if ($this->checkForMask && !$frame->isMasked()) {
-            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected an incorrect frame mask');
         }
 
         $opcode = $frame->getOpcode();
 
         if ($opcode > 2) {
             if ($frame->getPayloadLength() > 125 || !$frame->isFinal()) {
-                return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+                return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected a mismatch between final bit and indicated payload length');
             }
 
             switch ($opcode) {
@@ -140,8 +140,8 @@ class MessageBuffer {
                         return $this->newCloseFrame(Frame::CLOSE_NORMAL);
                     }
 
-                    if (strlen($bin) == 1) {
-                        return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+                    if (strlen($bin) === 1) {
+                        return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected an invalid close code');
                     }
 
                     if (strlen($bin) >= 2) {
@@ -150,11 +150,11 @@ class MessageBuffer {
 
                     $checker = $this->closeFrameChecker;
                     if (!$checker($closeCode)) {
-                        return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+                        return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected an invalid close code');
                     }
 
                     if (!$this->checkUtf8(substr($bin, 2))) {
-                        return $this->newCloseFrame(Frame::CLOSE_BAD_PAYLOAD);
+                        return $this->newCloseFrame(Frame::CLOSE_BAD_PAYLOAD, 'Ratchet detected an invalid UTF-8 payload in the close reason');
                     }
 
                     return $frame;
@@ -163,19 +163,19 @@ class MessageBuffer {
                 case Frame::OP_PONG:
                     break;
                 default:
-                    return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+                    return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected an invalid OP code');
                     break;
             }
 
             return $frame;
         }
 
-        if (Frame::OP_CONTINUE == $frame->getOpcode() && 0 == count($this->messageBuffer)) {
-            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+        if (Frame::OP_CONTINUE === $frame->getOpcode() && 0 === count($this->messageBuffer)) {
+            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected the first frame of a message was a continue');
         }
 
-        if (count($this->messageBuffer) > 0 && Frame::OP_CONTINUE != $frame->getOpcode()) {
-            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL);
+        if (count($this->messageBuffer) > 0 && Frame::OP_CONTINUE !== $frame->getOpcode()) {
+            return $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Ratchet detected invalid OP code when expecting continue frame');
         }
 
         return $frame;
@@ -221,7 +221,7 @@ class MessageBuffer {
         return new Frame($payload, $final, $opcode, $this->exceptionFactory);
     }
 
-    public function newCloseFrame($code) {
-        return $this->newFrame(pack('n', $code), true, Frame::OP_CLOSE);
+    public function newCloseFrame($code, $reason = '') {
+        return $this->newFrame(pack('n', $code) . $reason, true, Frame::OP_CLOSE);
     }
 }
