@@ -23,7 +23,7 @@ class ClientNegotiator {
             'Connection'            => 'Upgrade'
           , 'Upgrade'               => 'websocket'
           , 'Sec-WebSocket-Version' => $this->getVersion()
-          , 'User-Agent'            => "RatchetRFC/0.0.0"
+          , 'User-Agent'            => "Ratchet"
         ]);
     }
 
