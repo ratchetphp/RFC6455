@@ -113,6 +113,11 @@ class RequestVerifierTest extends \PHPUnit_Framework_TestCase {
             array(true,  ['keep-alive', 'Upgrade']),
             array(true,  ['Upgrade', 'keep-alive']),
             array(true,  ['keep-alive', 'Upgrade', 'something']),
+            // as seen in Firefox 47.0.1 - see https://github.com/ratchetphp/RFC6455/issues/14
+            array(true,  ['keep-alive, Upgrade']),
+            array(true,  ['Upgrade, keep-alive']),
+            array(true,  ['keep-alive, Upgrade, something']),
+            array(true,  ['keep-alive, Upgrade', 'something']),
             array(false, ['']),
             array(false, [])
         );

@@ -92,9 +92,18 @@ class RequestVerifier {
      * @return bool
      */
     public function verifyConnection(array $connectionHeader) {
-        return count(array_filter($connectionHeader, function ($x) {
-            return 'upgrade' === strtolower($x);
-        })) > 0;
+        foreach ($connectionHeader as $l) {
+            $upgrades = array_filter(
+                array_map('trim', array_map('strtolower', explode(',', $l))),
+                function ($x) {
+                    return 'upgrade' === $x;
+                }
+            );
+            if (count($upgrades) > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
