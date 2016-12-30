@@ -41,7 +41,7 @@ interface NegotiatorInterface {
      * @param boolean $enable
      * @todo Consider extending this interface and moving this there.
      *       The spec does says the server can fail for this reason, but
-             it is not a requirement. This is an implementation detail.
+     *       it is not a requirement. This is an implementation detail.
      */
     function setStrictSubProtocolCheck($enable);
 }
