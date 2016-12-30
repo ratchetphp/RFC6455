@@ -9,8 +9,8 @@ php:
 
 before_install:
     - export PATH=$HOME/.local/bin:$PATH
-    - pip install autobahntestsuite
-    - pip list autobahntestsuite
+    - pip install --user autobahntestsuite
+    - pip list --user autobahntestsuite
 
 before_script:
     - composer install
