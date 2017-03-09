@@ -1,5 +1,7 @@
 <?php
 use GuzzleHttp\Psr7\Uri;
+use Ratchet\RFC6455\Handshake\ResponseVerifier;
+use Ratchet\RFC6455\Messaging\MessageBuffer;
 use React\Promise\Deferred;
 use Ratchet\RFC6455\Messaging\Frame;
 
@@ -16,18 +18,19 @@ $dnsResolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
 $factory = new \React\SocketClient\Connector($loop, $dnsResolver);
 
-function echoStreamerFactory($conn)
+function echoStreamerFactory($conn, $permessageDeflateOptions = null)
 {
+    if ($permessageDeflateOptions === null) {
+        $permessageDeflateOptions = [];
+    }
+
     return new \Ratchet\RFC6455\Messaging\MessageBuffer(
         new \Ratchet\RFC6455\Messaging\CloseFrameChecker,
-        function (\Ratchet\RFC6455\Messaging\MessageInterface $msg) use ($conn) {
-            /** @var Frame $frame */
-            foreach ($msg as $frame) {
-                $frame->maskPayload();
-            }
-            $conn->write($msg->getContents());
+        function (\Ratchet\RFC6455\Messaging\MessageInterface $msg, MessageBuffer $messageBuffer) use ($conn) {
+            $messageBuffer->sendMessage($msg->getPayload(), true, $msg->isBinary());
         },
-        function (\Ratchet\RFC6455\Messaging\FrameInterface $frame) use ($conn) {
+        [$conn, 'write'],
+        function (\Ratchet\RFC6455\Messaging\FrameInterface $frame, MessageBuffer $messageBuffer) use ($conn) {
             switch ($frame->getOpcode()) {
                 case Frame::OP_PING:
                     return $conn->write((new Frame($frame->getPayload(), true, Frame::OP_PONG))->maskPayload()->getContents());
@@ -37,7 +40,9 @@ function echoStreamerFactory($conn)
                     break;
             }
         },
-        false
+        false,
+        null,
+        $permessageDeflateOptions
     );
 }
 
@@ -54,7 +59,7 @@ function getTestCases() {
         $rawResponse = "";
         $response = null;
 
-        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageBuffer $ms */
+        /** @var MessageBuffer $ms */
         $ms = null;
 
         $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {
@@ -76,6 +81,7 @@ function getTestCases() {
                                 $deferred->resolve($msg->getPayload());
                                 $stream->close();
                             },
+                            function () {},
                             null,
                             false
                         );
@@ -105,7 +111,7 @@ function runTest($case)
     $deferred = new Deferred();
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(true);
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
         $rawResponse = "";
@@ -126,7 +132,13 @@ function runTest($case)
                         $stream->end();
                         $deferred->reject();
                     } else {
-                        $ms = echoStreamerFactory($stream);
+                        $ms = echoStreamerFactory(
+                            $stream,
+                            (new ResponseVerifier())->getPermessageDeflateOptions(
+                                $cnRequest->getHeader('Sec-WebSocket-Extensions'),
+                                $response->getHeader('Sec-WebSocket-Extensions')
+                            )
+                        );
                     }
                 }
             }
@@ -183,6 +195,7 @@ function createReport() {
                                 $deferred->resolve($msg->getPayload());
                                 $stream->close();
                             },
+                            function () {},
                             null,
                             false
                         );
