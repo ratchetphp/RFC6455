@@ -1,6 +1,8 @@
 <?php
 namespace Ratchet\RFC6455\Messaging;
 
+use Ratchet\RFC6455\Handshake\PermessageDeflateOptions;
+
 class MessageBuffer {
     /**
      * @var \Ratchet\RFC6455\Messaging\CloseFrameChecker
@@ -37,12 +39,35 @@ class MessageBuffer {
      */
     private $checkForMask;
 
+    /**
+     * @var callable
+     */
+    private $sender;
+
+    /**
+     * @var int
+     */
+    private $streamingMessageOpCode = -1;
+
+    /**
+     * @var PermessageDeflateOptions
+     */
+    private $permessageDeflateOptions;
+
+    /**
+     * @var bool
+     */
+    private $deflate = false;
+
+
     function __construct(
         CloseFrameChecker $frameChecker,
         callable $onMessage,
+        callable $sender,
         callable $onControl = null,
         $expectMask = true,
-        $exceptionFactory = null
+        $exceptionFactory = null,
+        PermessageDeflateOptions $permessageDeflateOptions = null
     ) {
         $this->closeFrameChecker = $frameChecker;
         $this->checkForMask = (bool)$expectMask;
@@ -53,6 +78,14 @@ class MessageBuffer {
 
         $this->onMessage = $onMessage;
         $this->onControl = $onControl ?: function() {};
+
+        $this->sender = $sender;
+
+        $this->permessageDeflateOptions = $permessageDeflateOptions ? $permessageDeflateOptions : PermessageDeflateOptions::createDisabled();
+
+        $this->deflate = $this->permessageDeflateOptions->getDeflate();
+
+        $this->compressedMessage = false;
     }
 
     public function onData($data) {
@@ -85,12 +118,19 @@ class MessageBuffer {
         $opcode = $this->frameBuffer->getOpcode();
 
         if ($opcode > 2) {
-            $onControl($this->frameBuffer);
+            $onControl($this->frameBuffer, $this);
 
             if (Frame::OP_CLOSE === $opcode) {
                 return '';
             }
         } else {
+            if ($this->messageBuffer->count() === 0 && $this->frameBuffer->getRsv1()) {
+                $this->compressedMessage = true;
+            }
+            if ($this->compressedMessage) {
+                $this->frameBuffer = $this->inflateFrame($this->frameBuffer);
+            }
+
             $this->messageBuffer->addFrame($this->frameBuffer);
         }
 
@@ -99,12 +139,17 @@ class MessageBuffer {
         if ($this->messageBuffer->isCoalesced()) {
             $msgCheck = $this->checkMessage($this->messageBuffer);
             if (true !== $msgCheck) {
-                $onControl($this->newCloseFrame($msgCheck, 'Ratchet detected an invalid UTF-8 payload'));
+                $onControl($this->newCloseFrame($msgCheck, 'Ratchet detected an invalid UTF-8 payload'), $this);
             } else {
-                $onMessage($this->messageBuffer);
+                $onMessage($this->messageBuffer, $this);
             }
 
             $this->messageBuffer = null;
+            $this->compressedMessage = false;
+
+            if ($this->permessageDeflateOptions->getServerNoContextTakeover()) {
+                $this->inflator = null;
+            }
         }
 
         return $overflow;
@@ -116,7 +161,7 @@ class MessageBuffer {
      * @return \Ratchet\RFC6455\Messaging\FrameInterface|FrameInterface
      */
     public function frameCheck(FrameInterface $frame) {
-        if (false !== $frame->getRsv1() ||
+        if ((false !== $frame->getRsv1() && !$this->deflate) ||
             false !== $frame->getRsv2() ||
             false !== $frame->getRsv3()
         ) {
@@ -227,5 +272,135 @@ class MessageBuffer {
 
     public function newCloseFrame($code, $reason = '') {
         return $this->newFrame(pack('n', $code) . $reason, true, Frame::OP_CLOSE);
+    }
+
+
+    public function sendFrame(Frame $frame) {
+        if ($this->deflate &&
+            ($frame->getOpcode() === Frame::OP_TEXT || $frame->getOpcode() === Frame::OP_BINARY)) {
+            $frame = $this->deflateFrame($frame);
+        }
+
+        if (!$this->checkForMask) {
+            $frame->maskPayload();
+        }
+
+        $sender = $this->sender;
+        $sender($frame->getContents());
+    }
+
+    public function sendMessage($messagePayload, $final = true, $isBinary = false) {
+        $opCode = $isBinary ? Frame::OP_BINARY : Frame::OP_TEXT;
+        if ($this->streamingMessageOpCode === -1) {
+            $this->streamingMessageOpCode = $opCode;
+        }
+
+        if ($this->streamingMessageOpCode !== $opCode) {
+            throw new \Exception('Binary and text message parts cannot be streamed together.');
+        }
+
+        $frame = $this->newFrame($messagePayload, $final, $opCode);
+
+        $this->sendFrame($frame);
+
+        if ($final) {
+            // reset deflator if client doesn't remember contexts
+            if ($this->permessageDeflateOptions->getClientNoContextTakeover()) {
+                $this->deflator = null;
+            }
+            $this->streamingMessageOpCode = -1;
+        }
+    }
+
+    private $inflator;
+
+    private function inflateFrame(Frame $frame) {
+        if ($this->inflator === null) {
+//            $this->inflator = inflate_init(ZLIB_ENCODING_RAW);
+            $this->inflator = inflate_init(
+                ZLIB_ENCODING_RAW,
+                [
+                    'level'    => -1,
+                    'memory'   => 8,
+                    'window'   => $this->permessageDeflateOptions->getClientMaxWindowBits(),
+                    'strategy' => ZLIB_DEFAULT_STRATEGY
+                ]
+            );
+        }
+
+        $terminator = '';
+        if ($frame->isFinal()) {
+            $terminator = "\x00\x00\xff\xff";
+        }
+
+        gc_collect_cycles(); // memory runs away if we don't collect ??
+
+        return new Frame(
+            inflate_add($this->inflator, $frame->getPayload() . $terminator),
+            $frame->isFinal(),
+            $frame->getOpcode()
+        );
+    }
+    private $deflator;
+
+    private function deflateFrame(Frame $frame) {
+        if ($frame->getRsv1()) {
+            return $frame; // frame is already deflated
+        }
+
+        if ($this->deflator === null) {
+//            $this->deflator = deflate_init(
+//                ZLIB_ENCODING_RAW
+//            );
+            echo "init with " . $this->permessageDeflateOptions->getServerMaxWindowBits();
+            $this->deflator = deflate_init(
+                ZLIB_ENCODING_RAW,
+                [
+                    'level'    => -1,
+                    'memory'   => 8,
+                    'window'   => $this->permessageDeflateOptions->getServerMaxWindowBits(),
+                    'strategy' => ZLIB_DEFAULT_STRATEGY
+                ]
+            );
+        }
+
+        // there is an issue in the zlib extension for php where
+        // deflate_add does not check avail_out to see if the buffer filled
+        // this only seems to be an issue for payloads between 16 and 64 bytes
+        // This if statement is a hack fix to break the output up allowing us
+        // to call deflate_add twice which should clear the buffer issue
+//        if ($frame->getPayloadLength() >= 16 && $frame->getPayloadLength() <= 64) {
+//            // try processing in 8 byte chunks
+//            // https://bugs.php.net/bug.php?id=73373
+//            $payload = "";
+//            $orig = $frame->getPayload();
+//            $partSize = 8;
+//            while (strlen($orig) > 0) {
+//                $part = substr($orig, 0, $partSize);
+//                $orig = substr($orig, strlen($part));
+//                $flags = strlen($orig) > 0 ? ZLIB_PARTIAL_FLUSH : ZLIB_SYNC_FLUSH;
+//                $payload .= deflate_add($this->deflator, $part, $flags);
+//            }
+//        } else {
+            $payload = deflate_add(
+                $this->deflator,
+                $frame->getPayload(),
+                ZLIB_SYNC_FLUSH
+            );
+//        }
+
+        $deflatedFrame = new Frame(
+            substr($payload, 0, $frame->isFinal() ? -4 : strlen($payload)),
+            $frame->isFinal(),
+            $frame->getOpcode()
+        );
+
+        if ($frame->isFinal()) {
+            $deflatedFrame->setRsv1();
+        }
+
+        gc_collect_cycles(); // memory runs away if we don't collect ??
+
+        return $deflatedFrame;
     }
 }

@@ -17,8 +17,19 @@ class ServerNegotiator implements NegotiatorInterface {
 
     private $_strictSubProtocols = false;
 
-    public function __construct(RequestVerifier $requestVerifier) {
+    private $enablePerMessageDeflate = false;
+
+    public function __construct(RequestVerifier $requestVerifier, $enablePerMessageDeflate = false) {
         $this->verifier = $requestVerifier;
+
+        if ($enablePerMessageDeflate && (version_compare(PHP_VERSION, '7.0.15', '<') || version_compare(PHP_VERSION, '7.1.0', '='))) {
+            $enablePerMessageDeflate = false;
+        }
+        if ($enablePerMessageDeflate && !function_exists('deflate_add')) {
+            $enablePerMessageDeflate = false;
+        }
+
+        $this->enablePerMessageDeflate = $enablePerMessageDeflate;
     }
 
     /**
@@ -89,12 +100,23 @@ class ServerNegotiator implements NegotiatorInterface {
             }
         }
 
-        return new Response(101, array_merge($headers, [
+        $response = new Response(101, array_merge($headers, [
             'Upgrade'              => 'websocket'
-          , 'Connection'           => 'Upgrade'
-          , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
-          , 'X-Powered-By'         => 'Ratchet'
+            , 'Connection'           => 'Upgrade'
+            , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
+            , 'X-Powered-By'         => 'Ratchet'
         ]));
+
+
+//        $perMessageDeflate = array_filter($request->getHeader('Sec-WebSocket-Extensions'), function ($x) {
+//            return 'permessage-deflate' === substr($x, 0, strlen('permessage-deflate'));
+//        });
+        $perMessageDeflateRequest = PermessageDeflateOptions::fromRequestOrResponse($request)[0];
+        if ($this->enablePerMessageDeflate && $perMessageDeflateRequest->getDeflate()) {
+            $response = $perMessageDeflateRequest->addHeaderToResponse($response);
+        }
+
+        return $response;
     }
 
     /**

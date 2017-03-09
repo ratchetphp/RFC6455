@@ -16,7 +16,7 @@ class ClientNegotiator {
      */
     private $defaultHeader;
 
-    function __construct() {
+    function __construct($enablePerMessageDeflate = false) {
         $this->verifier = new ResponseVerifier;
 
         $this->defaultHeader = new Request('GET', '', [
@@ -25,6 +25,19 @@ class ClientNegotiator {
           , 'Sec-WebSocket-Version' => $this->getVersion()
           , 'User-Agent'            => "Ratchet"
         ]);
+
+        if ($enablePerMessageDeflate && (version_compare(PHP_VERSION, '7.0.15', '<') || version_compare(PHP_VERSION, '7.1.0', '='))) {
+            $enablePerMessageDeflate = false;
+        }
+        if ($enablePerMessageDeflate && !function_exists('deflate_add')) {
+            $enablePerMessageDeflate = false;
+        }
+
+        if ($enablePerMessageDeflate) {
+            $this->defaultHeader = $this->defaultHeader->withAddedHeader(
+                'Sec-WebSocket-Extensions',
+                'permessage-deflate');
+        }
     }
 
     public function generateRequest(UriInterface $uri) {
