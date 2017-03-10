@@ -36,7 +36,7 @@ class ClientNegotiator {
         if ($enablePerMessageDeflate) {
             $this->defaultHeader = $this->defaultHeader->withAddedHeader(
                 'Sec-WebSocket-Extensions',
-                'permessage-deflate');
+                'permessage-deflate; client_max_window_bits');
         }
     }
 

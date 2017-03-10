@@ -121,7 +121,6 @@ final class PermessageDeflateOptions
      */
     public function getClientNoContextTakeover()
     {
-        return false; // always return false unless we want to conserve resources
         return $this->client_no_context_takeover;
     }
 
@@ -163,19 +162,15 @@ final class PermessageDeflateOptions
         if ($this->client_max_window_bits != 15) {
             $header .= '; client_max_window_bits='. $this->client_max_window_bits;
         }
-        // this would only be needed if you want to save server resources (no buffer needed)
-        // worse compression
-//        if ($this->client_no_context_takeover) {
-//            $header .= '; client_no_context_takeover';
-//        }
+        if ($this->client_no_context_takeover) {
+            $header .= '; client_no_context_takeover';
+        }
         if ($this->server_max_window_bits != 15) {
             $header .= '; server_max_window_bits=' . $this->server_max_window_bits;
         }
         if ($this->server_no_context_takeover) {
             $header .= '; server_no_context_takeover';
         }
-
-        echo $header . "\n";
 
         return $response->withAddedHeader('Sec-Websocket-Extensions', $header);
     }
