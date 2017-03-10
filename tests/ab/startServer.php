@@ -1,7 +1,5 @@
 <?php
 use Ratchet\RFC6455\Handshake\PermessageDeflateOptions;
-use Ratchet\RFC6455\Handshake\RequestVerifier;
-use Ratchet\RFC6455\Handshake\ResponseVerifier;
 use Ratchet\RFC6455\Messaging\MessageBuffer;
 use Ratchet\RFC6455\Messaging\MessageInterface;
 use Ratchet\RFC6455\Messaging\FrameInterface;

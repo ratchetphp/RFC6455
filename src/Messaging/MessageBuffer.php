@@ -124,6 +124,8 @@ class MessageBuffer {
                 return '';
             }
         } else {
+            //echo "fin: " . json_encode($this->frameBuffer->isFinal()) . ", bCount: " . $this->messageBuffer->count() . ", Rsv1: " . json_encode($this->frameBuffer->getRsv1()) . "\n";
+
             if ($this->messageBuffer->count() === 0 && $this->frameBuffer->getRsv1()) {
                 $this->compressedMessage = true;
             }
@@ -305,7 +307,7 @@ class MessageBuffer {
 
         if ($final) {
             // reset deflator if client doesn't remember contexts
-            if ($this->permessageDeflateOptions->getClientNoContextTakeover()) {
+            if ($this->getDeflateNoContextTakeover()) {
                 $this->deflator = null;
             }
             $this->streamingMessageOpCode = -1;
@@ -314,17 +316,38 @@ class MessageBuffer {
 
     private $inflator;
 
+    private function getDeflateNoContextTakeover() {
+        return $this->checkForMask ?
+            $this->permessageDeflateOptions->getServerNoContextTakeover() :
+            $this->permessageDeflateOptions->getClientNoContextTakeover();
+    }
+
+    private function getDeflateWindowBits() {
+        return $this->checkForMask ? $this->permessageDeflateOptions->getServerMaxWindowBits() : $this->permessageDeflateOptions->getClientMaxWindowBits();
+    }
+
+    private function getInflateNoContextTakeover() {
+        return $this->checkForMask ?
+            $this->permessageDeflateOptions->getClientNoContextTakeover() :
+            $this->permessageDeflateOptions->getServerNoContextTakeover();
+    }
+
+    private function getInflateWindowBits() {
+        return $this->checkForMask ? $this->permessageDeflateOptions->getClientMaxWindowBits() : $this->permessageDeflateOptions->getServerMaxWindowBits();
+    }
+
     private function inflateFrame(Frame $frame) {
         if ($this->inflator === null) {
-//            $this->inflator = inflate_init(ZLIB_ENCODING_RAW);
+            $options        = [
+                'level'    => -1,
+                'memory'   => 8,
+                'window'   => $this->getInflateWindowBits(),
+                'strategy' => ZLIB_DEFAULT_STRATEGY
+            ];
+            //echo "inflate_init(RAW, " . json_encode($options) . ")\n";
             $this->inflator = inflate_init(
                 ZLIB_ENCODING_RAW,
-                [
-                    'level'    => -1,
-                    'memory'   => 8,
-                    'window'   => $this->permessageDeflateOptions->getClientMaxWindowBits(),
-                    'strategy' => ZLIB_DEFAULT_STRATEGY
-                ]
+                $options
             );
         }
 
@@ -349,16 +372,12 @@ class MessageBuffer {
         }
 
         if ($this->deflator === null) {
-//            $this->deflator = deflate_init(
-//                ZLIB_ENCODING_RAW
-//            );
-            echo "init with " . $this->permessageDeflateOptions->getServerMaxWindowBits();
             $this->deflator = deflate_init(
                 ZLIB_ENCODING_RAW,
                 [
                     'level'    => -1,
                     'memory'   => 8,
-                    'window'   => $this->permessageDeflateOptions->getServerMaxWindowBits(),
+                    'window'   => $this->getDeflateWindowBits(),
                     'strategy' => ZLIB_DEFAULT_STRATEGY
                 ]
             );
