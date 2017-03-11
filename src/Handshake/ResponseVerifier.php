@@ -56,23 +56,9 @@ class ResponseVerifier {
 
     public function verifyExtensions(array $requestHeader, array $responseHeader) {
         if (in_array('permessage-deflate', $responseHeader)) {
-            return in_array('permessage-deflate', $requestHeader);
+            return strpos(implode(',', $requestHeader), 'permessage-deflate') !== false ? 1 : 0;
         }
 
         return 1;
-    }
-
-    public function getPermessageDeflateOptions(array $requestHeader, array $responseHeader) {
-        if (!$this->verifyExtensions($requestHeader, $responseHeader)) {
-            return false;
-        }
-
-        return [
-            'deflate' => in_array('permessage-deflate', $responseHeader),
-            'no_context_takeover' => false,
-            'max_window_bits' => null,
-            'request_no_context_takeover' => false,
-            'request_max_window_bits' => null
-        ];
     }
 }

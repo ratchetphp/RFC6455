@@ -81,7 +81,7 @@ class MessageBuffer {
 
         $this->sender = $sender;
 
-        $this->permessageDeflateOptions = $permessageDeflateOptions ? $permessageDeflateOptions : PermessageDeflateOptions::createDisabled();
+        $this->permessageDeflateOptions = $permessageDeflateOptions ?: PermessageDeflateOptions::createDisabled();
 
         $this->deflate = $this->permessageDeflateOptions->getDeflate();
 

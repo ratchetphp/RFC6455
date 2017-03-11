@@ -8,7 +8,10 @@ use Psr\Http\Message\ResponseInterface;
 
 final class PermessageDeflateOptions
 {
-    private $deflate = false; // disable by default
+    const MAX_WINDOW_BITS = 15;
+    const VALID_BITS = ['8', '9', '10', '11', '12', '13', '14', '15'];
+
+    private $deflate = false;
 
     private $server_no_context_takeover;
     private $client_no_context_takeover;
@@ -16,6 +19,56 @@ final class PermessageDeflateOptions
     private $client_max_window_bits;
 
     private function __construct() { }
+
+    public static function createDefault() {
+        $new = new static();
+        $new->deflate = true;
+        $new->client_max_window_bits = self::MAX_WINDOW_BITS;
+        $new->client_no_context_takeover = false;
+        $new->server_max_window_bits = self::MAX_WINDOW_BITS;
+        $new->server_no_context_takeover = false;
+        return $new;
+    }
+
+    public static function createDisabled() {
+        return new static();
+    }
+
+    public function withClientNoContextTakeover() {
+        $new = clone $this;
+        $new->client_no_context_takeover = true;
+    }
+
+    public function withoutClientNoContextTakeover() {
+        $new = clone $this;
+        $new->client_no_context_takeover = false;
+    }
+
+    public function withServerNoContextTakeover() {
+        $new = clone $this;
+        $new->server_no_context_takeover = true;
+    }
+
+    public function withoutServerNoContextTakeover() {
+        $new = clone $this;
+        $new->server_no_context_takeover = false;
+    }
+
+    public function withServerMaxWindowBits($bits = self::MAX_WINDOW_BITS) {
+        if (!in_array($bits, self::VALID_BITS)) {
+            throw new \Exception('server_max_window_bits must have a value between 8 and 15.');
+        }
+        $new = clone $this;
+        $new->server_max_window_bits = $bits;
+    }
+
+    public function withClientMaxWindowBits($bits = self::MAX_WINDOW_BITS) {
+        if (!in_array($bits, self::VALID_BITS)) {
+            throw new \Exception('client_max_window_bits must have a value between 8 and 15.');
+        }
+        $new = clone $this;
+        $new->client_max_window_bits = $bits;
+    }
 
     /**
      * https://tools.ietf.org/html/rfc6455#section-9.1
@@ -49,34 +102,33 @@ final class PermessageDeflateOptions
                 $key = $kv[0];
                 $value = count($kv) > 1 ? $kv[1] : null;
 
-                $validBits = ['8', '9', '10', '11', '12', '13', '14', '15'];
                 switch ($key) {
                     case "server_no_context_takeover":
                     case "client_no_context_takeover":
                         if ($value !== null) {
-                            throw new \Exception($key . ' must not have a value.');
+                            throw new InvalidPermessageDeflateOptionsException($key . ' must not have a value.');
                         }
                         $value = true;
                         break;
                     case "server_max_window_bits":
-                        if (!in_array($value, $validBits)) {
-                            throw new \Exception($key . ' must have a value between 8 and 15.');
+                        if (!in_array($value, self::VALID_BITS)) {
+                            throw new InvalidPermessageDeflateOptionsException($key . ' must have a value between 8 and 15.');
                         }
                         break;
                     case "client_max_window_bits":
                         if ($value === null) {
                             $value = '15';
                         }
-                        if (!in_array($value, $validBits)) {
-                            throw new \Exception($key . ' must have no value or a value between 8 and 15.');
+                        if (!in_array($value, self::VALID_BITS)) {
+                            throw new InvalidPermessageDeflateOptionsException($key . ' must have no value or a value between 8 and 15.');
                         }
                         break;
                     default:
-                        throw new \Exception('Option "' . $key . '"is not valid for this extension');
+                        throw new InvalidPermessageDeflateOptionsException('Option "' . $key . '"is not valid for permessage deflate');
                 }
 
                 if ($options->$key !== null) {
-                    throw new \Exception('Key specified more than once. Connection must be declined.');
+                    throw new InvalidPermessageDeflateOptionsException($key . ' specified more than once. Connection must be declined.');
                 }
 
                 $options->$key = $value;
@@ -99,14 +151,10 @@ final class PermessageDeflateOptions
         return $optionSets;
     }
 
-    public static function createDisabled() {
-        return new static();
-    }
-
-    public static function validateResponseToRequest(ResponseInterface $response, RequestInterface $request) {
-        $requestOptions = static::fromRequestOrResponse($request);
-        $responseOptions = static::fromRequestOrResponse($response);
-    }
+//    public static function validateResponseToRequest(ResponseInterface $response, RequestInterface $request) {
+//        $requestOptions = static::fromRequestOrResponse($request);
+//        $responseOptions = static::fromRequestOrResponse($response);
+//    }
 
     /**
      * @return mixed
@@ -173,5 +221,28 @@ final class PermessageDeflateOptions
         }
 
         return $response->withAddedHeader('Sec-Websocket-Extensions', $header);
+    }
+
+    public function addHeaderToRequest(RequestInterface $request) {
+        if (!$this->deflate) {
+            return $request;
+        }
+
+        $header = 'permessage-deflate';
+        if ($this->server_no_context_takeover) {
+            $header .= '; server_no_context_takeover';
+        }
+        if ($this->client_no_context_takeover) {
+            $header .= '; client_no_context_takeover';
+        }
+        if ($this->server_max_window_bits != 15) {
+            $header .= '; server_max_window_bits=' . $this->server_max_window_bits;
+        }
+        $header .= '; client_max_window_bits';
+        if ($this->client_max_window_bits != 15) {
+            $header .= '='. $this->client_max_window_bits;
+        }
+
+        return $request->withAddedHeader('Sec-Websocket-Extensions', $header);
     }
 }

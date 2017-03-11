@@ -16,7 +16,7 @@ class ClientNegotiator {
      */
     private $defaultHeader;
 
-    function __construct($enablePerMessageDeflate = false) {
+    function __construct(PermessageDeflateOptions $perMessageDeflateOptions = null) {
         $this->verifier = new ResponseVerifier;
 
         $this->defaultHeader = new Request('GET', '', [
@@ -26,18 +26,19 @@ class ClientNegotiator {
           , 'User-Agent'            => "Ratchet"
         ]);
 
-        if ($enablePerMessageDeflate && (version_compare(PHP_VERSION, '7.0.15', '<') || version_compare(PHP_VERSION, '7.1.0', '='))) {
-            $enablePerMessageDeflate = false;
+        // https://bugs.php.net/bug.php?id=73373
+        if ($perMessageDeflateOptions === null) {
+            $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
         }
-        if ($enablePerMessageDeflate && !function_exists('deflate_add')) {
-            $enablePerMessageDeflate = false;
+        if (
+            version_compare(PHP_VERSION, '7.0.15', '<')
+            || version_compare(PHP_VERSION, '7.1.0', '=')
+            || !function_exists('deflate_add')
+        ) {
+            $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
         }
 
-        if ($enablePerMessageDeflate) {
-            $this->defaultHeader = $this->defaultHeader->withAddedHeader(
-                'Sec-WebSocket-Extensions',
-                'permessage-deflate; client_max_window_bits');
-        }
+        $this->defaultHeader = $perMessageDeflateOptions->addHeaderToRequest($this->defaultHeader);
     }
 
     public function generateRequest(UriInterface $uri) {
