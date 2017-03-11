@@ -1,6 +1,7 @@
 <?php
 use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\RequestInterface;
+use Ratchet\RFC6455\Handshake\InvalidPermessageDeflateOptionsException;
 use Ratchet\RFC6455\Handshake\PermessageDeflateOptions;
 use Ratchet\RFC6455\Handshake\ResponseVerifier;
 use Ratchet\RFC6455\Messaging\MessageBuffer;
@@ -22,6 +23,8 @@ $factory = new \React\SocketClient\Connector($loop, $dnsResolver);
 
 function echoStreamerFactory($conn, $permessageDeflateOptions = null)
 {
+    $permessageDeflateOptions = $permessageDeflateOptions ?: PermessageDeflateOptions::createDisabled();
+
     return new \Ratchet\RFC6455\Messaging\MessageBuffer(
         new \Ratchet\RFC6455\Messaging\CloseFrameChecker,
         function (\Ratchet\RFC6455\Messaging\MessageInterface $msg, MessageBuffer $messageBuffer) use ($conn) {
@@ -109,7 +112,7 @@ function runTest($case)
     $deferred = new Deferred();
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(true);
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(PermessageDeflateOptions::createDefault());
         /** @var RequestInterface $cnRequest */
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
@@ -132,9 +135,15 @@ function runTest($case)
                         $stream->end();
                         $deferred->reject();
                     } else {
+                        try {
+                            $permessageDeflateOptions = PermessageDeflateOptions::fromRequestOrResponse($response)[0];
+                        } catch (InvalidPermessageDeflateOptionsException $e) {
+                            $stream->end();
+                        }
+
                         $ms = echoStreamerFactory(
                             $stream,
-                            PermessageDeflateOptions::fromRequestOrResponse($response)[0]
+                            $permessageDeflateOptions
                         );
                     }
                 }

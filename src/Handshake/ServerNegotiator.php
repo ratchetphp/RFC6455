@@ -119,7 +119,12 @@ class ServerNegotiator implements NegotiatorInterface {
 //        $perMessageDeflate = array_filter($request->getHeader('Sec-WebSocket-Extensions'), function ($x) {
 //            return 'permessage-deflate' === substr($x, 0, strlen('permessage-deflate'));
 //        });
-        $perMessageDeflateRequest = PermessageDeflateOptions::fromRequestOrResponse($request)[0];
+        try {
+            $perMessageDeflateRequest = PermessageDeflateOptions::fromRequestOrResponse($request)[0];
+        } catch (InvalidPermessageDeflateOptionsException $e) {
+            return new Response(400, [], null, '1.1', $e->getMessage());
+        }
+
         if ($this->enablePerMessageDeflate && $perMessageDeflateRequest->getDeflate()) {
             $response = $perMessageDeflateRequest->addHeaderToResponse($response);
         }
