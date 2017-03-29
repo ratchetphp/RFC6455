@@ -22,10 +22,15 @@ class ServerNegotiator implements NegotiatorInterface {
     public function __construct(RequestVerifier $requestVerifier, $enablePerMessageDeflate = false) {
         $this->verifier = $requestVerifier;
 
-        if ($enablePerMessageDeflate && (version_compare(PHP_VERSION, '7.0.15', '<') || version_compare(PHP_VERSION, '7.1.0', '='))) {
+        // https://bugs.php.net/bug.php?id=73373
+        // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
+        $supported = version_compare(PHP_VERSION, '7.0.18', '>=') && !version_compare(PHP_VERSION, '7.1.4', '<');
+        if ($enablePerMessageDeflate && !$supported) {
+            trigger_error('permessage-deflate is being disabled because it is not support by your PHP version.', E_USER_NOTICE);
             $enablePerMessageDeflate = false;
         }
         if ($enablePerMessageDeflate && !function_exists('deflate_add')) {
+            trigger_error('permessage-deflate is being disabled because you do not have the zlib extension.', E_USER_NOTICE);
             $enablePerMessageDeflate = false;
         }
 
@@ -115,10 +120,6 @@ class ServerNegotiator implements NegotiatorInterface {
             , 'X-Powered-By'         => 'Ratchet'
         ]));
 
-
-//        $perMessageDeflate = array_filter($request->getHeader('Sec-WebSocket-Extensions'), function ($x) {
-//            return 'permessage-deflate' === substr($x, 0, strlen('permessage-deflate'));
-//        });
         try {
             $perMessageDeflateRequest = PermessageDeflateOptions::fromRequestOrResponse($request)[0];
         } catch (InvalidPermessageDeflateOptionsException $e) {

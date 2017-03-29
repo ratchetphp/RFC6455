@@ -5,6 +5,6 @@
     }
   , "outdir": "./reports/clients"
   , "cases": ["*"]
-  , "exclude-cases": ["6.4.*", "12.*", "13.*"]
+  , "exclude-cases": []
   , "exclude-agent-cases": {}
 }
