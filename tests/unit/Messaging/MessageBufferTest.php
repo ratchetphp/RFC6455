@@ -28,6 +28,7 @@ class MessageBufferTest extends \PHPUnit_Framework_TestCase
                 $messageCount++;
                 $this->assertEquals('a', $message->getPayload());
             },
+            function () {},
             null,
             false
         );
