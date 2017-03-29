@@ -26,15 +26,17 @@ class ClientNegotiator {
           , 'User-Agent'            => "Ratchet"
         ]);
 
-        // https://bugs.php.net/bug.php?id=73373
         if ($perMessageDeflateOptions === null) {
             $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
         }
-        if (
-            version_compare(PHP_VERSION, '7.0.15', '<')
-            || version_compare(PHP_VERSION, '7.1.0', '=')
-            || !function_exists('deflate_add')
-        ) {
+
+        // https://bugs.php.net/bug.php?id=73373
+        // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
+        $supported = version_compare(PHP_VERSION, '7.0.18', '>=') && !version_compare(PHP_VERSION, '7.1.4', '<');
+        if (!$supported) {
+            if ($perMessageDeflateOptions->getDeflate()) {
+                trigger_error('permessage-deflate is being disabled because it is not support by your PHP version.', E_USER_NOTICE);
+            }
             $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
         }
 

@@ -124,8 +124,6 @@ class MessageBuffer {
                 return '';
             }
         } else {
-            //echo "fin: " . json_encode($this->frameBuffer->isFinal()) . ", bCount: " . $this->messageBuffer->count() . ", Rsv1: " . json_encode($this->frameBuffer->getRsv1()) . "\n";
-
             if ($this->messageBuffer->count() === 0 && $this->frameBuffer->getRsv1()) {
                 $this->compressedMessage = true;
             }
@@ -338,16 +336,14 @@ class MessageBuffer {
 
     private function inflateFrame(Frame $frame) {
         if ($this->inflator === null) {
-            $options        = [
-                'level'    => -1,
-                'memory'   => 8,
-                'window'   => $this->getInflateWindowBits(),
-                'strategy' => ZLIB_DEFAULT_STRATEGY
-            ];
-            //echo "inflate_init(RAW, " . json_encode($options) . ")\n";
             $this->inflator = inflate_init(
                 ZLIB_ENCODING_RAW,
-                $options
+                [
+                    'level'    => -1,
+                    'memory'   => 8,
+                    'window'   => $this->getInflateWindowBits(),
+                    'strategy' => ZLIB_DEFAULT_STRATEGY
+                ]
             );
         }
 
@@ -417,8 +413,6 @@ class MessageBuffer {
         if ($frame->isFinal()) {
             $deflatedFrame->setRsv1();
         }
-
-        gc_collect_cycles(); // memory runs away if we don't collect ??
 
         return $deflatedFrame;
     }
