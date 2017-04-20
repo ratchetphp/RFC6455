@@ -2,7 +2,6 @@
 
 namespace Ratchet\RFC6455\Test\Unit\Handshake;
 
-use function GuzzleHttp\Psr7\parse_request;
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 use Ratchet\RFC6455\Handshake\ServerNegotiator;
 
@@ -22,7 +21,7 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0
 Accept-Encoding: gzip, deflate, sdch, br
 Accept-Language: en-US,en;q=0.8';
 
-        $request = parse_request($requestText);
+        $request = \GuzzleHttp\Psr7\parse_request($requestText);
 
         $response = $negotiator->handshake($request);
 
@@ -49,7 +48,7 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0
 Accept-Encoding: gzip, deflate, sdch, br
 Accept-Language: en-US,en;q=0.8';
 
-        $request = parse_request($requestText);
+        $request = \GuzzleHttp\Psr7\parse_request($requestText);
 
         $response = $negotiator->handshake($request);
 
@@ -74,7 +73,7 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0
 Accept-Encoding: gzip, deflate, sdch, br
 Accept-Language: en-US,en;q=0.8';
 
-        $request = parse_request($requestText);
+        $request = \GuzzleHttp\Psr7\parse_request($requestText);
 
         $response = $negotiator->handshake($request);
 
@@ -99,7 +98,7 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0
 Accept-Encoding: gzip, deflate, sdch, br
 Accept-Language: en-US,en;q=0.8';
 
-        $request = parse_request($requestText);
+        $request = \GuzzleHttp\Psr7\parse_request($requestText);
 
         $response = $negotiator->handshake($request);
 
@@ -129,7 +128,7 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0
 Accept-Encoding: gzip, deflate, sdch, br
 Accept-Language: en-US,en;q=0.8';
 
-        $request = parse_request($requestText);
+        $request = \GuzzleHttp\Psr7\parse_request($requestText);
 
         $response = $negotiator->handshake($request);
 
