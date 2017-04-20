@@ -13,12 +13,15 @@ class ServerNegotiator implements NegotiatorInterface {
      */
     private $verifier;
 
-    private $_supportedSubProtocols = [];
+    private $_supportedSubProtocols;
 
-    private $_strictSubProtocols = false;
+    private $_strictSubProtocols;
 
-    public function __construct(RequestVerifier $requestVerifier) {
+    public function __construct(RequestVerifier $requestVerifier, array $supportedSubProtocols = [], $strictSubProtocol = false) {
         $this->verifier = $requestVerifier;
+
+        $this->_supportedSubProtocols = $supportedSubProtocols;
+        $this->_strictSubProtocols = $strictSubProtocol;
     }
 
     /**
@@ -55,20 +58,38 @@ class ServerNegotiator implements NegotiatorInterface {
             return new Response(400);
         }
 
+        $upgradeSuggestion = [
+            'Connection'             => 'Upgrade',
+            'Upgrade'                => 'websocket',
+            'Sec-WebSocket-Version'  => $this->getVersionNumber(),
+            'Sec-WebSocket-Protocol' => implode(', ', $this->_supportedSubProtocols)
+        ];
         if (true !== $this->verifier->verifyUpgradeRequest($request->getHeader('Upgrade'))) {
-            return new Response(400, [], '1.1', null, 'Upgrade header MUST be provided');
+            return new Response(
+                426,
+                $upgradeSuggestion,
+                null,
+                '1.1',
+                'Upgrade header MUST be provided'
+            );
         }
 
         if (true !== $this->verifier->verifyConnection($request->getHeader('Connection'))) {
-            return new Response(400, [], '1.1', null, 'Connection header MUST be provided');
+            return new Response(400, [], null, '1.1', 'Connection Upgrade MUST be requested');
         }
 
         if (true !== $this->verifier->verifyKey($request->getHeader('Sec-WebSocket-Key'))) {
-            return new Response(400, [], '1.1', null, 'Invalid Sec-WebSocket-Key');
+            return new Response(400, [], null, '1.1', 'Invalid Sec-WebSocket-Key');
         }
 
         if (true !== $this->verifier->verifyVersion($request->getHeader('Sec-WebSocket-Version'))) {
-            return new Response(426, ['Sec-WebSocket-Version' => $this->getVersionNumber()]);
+            /*
+             * https://tools.ietf.org/html/rfc7230#section-6.7
+             * A server that sends a 426 (Upgrade Required) response MUST send an
+             * Upgrade header field to indicate the acceptable protocols, in order
+             * of descending preference
+             */
+            return new Response(426, $upgradeSuggestion);
         }
 
         $headers = [];
@@ -81,7 +102,7 @@ class ServerNegotiator implements NegotiatorInterface {
             }, null);
 
             if ($this->_strictSubProtocols && null === $match) {
-                return new Response(400, [], '1.1', null ,'No Sec-WebSocket-Protocols requested supported');
+                return new Response(426, $upgradeSuggestion);
             }
 
             if (null !== $match) {
@@ -107,6 +128,10 @@ class ServerNegotiator implements NegotiatorInterface {
         return base64_encode(sha1($key . static::GUID, true));
     }
 
+    /**
+     * @param array $protocols
+     * @deprecated
+     */
     function setSupportedSubProtocols(array $protocols) {
         $this->_supportedSubProtocols = array_flip($protocols);
     }
@@ -118,6 +143,7 @@ class ServerNegotiator implements NegotiatorInterface {
      * @todo Consider extending this interface and moving this there.
      *       The spec does says the server can fail for this reason, but
      * it is not a requirement. This is an implementation detail.
+     * @deprecated
      */
     function setStrictSubProtocolCheck($enable) {
         $this->_strictSubProtocols = (boolean)$enable;
