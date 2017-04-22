@@ -24,7 +24,7 @@ class ServerNegotiator implements NegotiatorInterface {
 
         // https://bugs.php.net/bug.php?id=73373
         // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
-        $supported = version_compare(PHP_VERSION, '7.0.18', '>=') && !version_compare(PHP_VERSION, '7.1.4', '<');
+        $supported = PermessageDeflateOptions::permessageDeflateSupported();
         if ($enablePerMessageDeflate && !$supported) {
             trigger_error('permessage-deflate is being disabled because it is not support by your PHP version.', E_USER_NOTICE);
             $enablePerMessageDeflate = false;

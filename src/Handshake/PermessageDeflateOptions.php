@@ -9,7 +9,8 @@ use Psr\Http\Message\ResponseInterface;
 final class PermessageDeflateOptions
 {
     const MAX_WINDOW_BITS = 15;
-    const VALID_BITS = ['8', '9', '10', '11', '12', '13', '14', '15'];
+    /* this is a private instead of const for 5.4 compatibility */
+    private static $VALID_BITS = ['8', '9', '10', '11', '12', '13', '14', '15'];
 
     private $deflate = false;
 
@@ -55,7 +56,7 @@ final class PermessageDeflateOptions
     }
 
     public function withServerMaxWindowBits($bits = self::MAX_WINDOW_BITS) {
-        if (!in_array($bits, self::VALID_BITS)) {
+        if (!in_array($bits, self::$VALID_BITS)) {
             throw new \Exception('server_max_window_bits must have a value between 8 and 15.');
         }
         $new = clone $this;
@@ -63,7 +64,7 @@ final class PermessageDeflateOptions
     }
 
     public function withClientMaxWindowBits($bits = self::MAX_WINDOW_BITS) {
-        if (!in_array($bits, self::VALID_BITS)) {
+        if (!in_array($bits, self::$VALID_BITS)) {
             throw new \Exception('client_max_window_bits must have a value between 8 and 15.');
         }
         $new = clone $this;
@@ -111,7 +112,7 @@ final class PermessageDeflateOptions
                         $value = true;
                         break;
                     case "server_max_window_bits":
-                        if (!in_array($value, self::VALID_BITS)) {
+                        if (!in_array($value, self::$VALID_BITS)) {
                             throw new InvalidPermessageDeflateOptionsException($key . ' must have a value between 8 and 15.');
                         }
                         break;
@@ -119,7 +120,7 @@ final class PermessageDeflateOptions
                         if ($value === null) {
                             $value = '15';
                         }
-                        if (!in_array($value, self::VALID_BITS)) {
+                        if (!in_array($value, self::$VALID_BITS)) {
                             throw new InvalidPermessageDeflateOptionsException($key . ' must have no value or a value between 8 and 15.');
                         }
                         break;
@@ -244,5 +245,20 @@ final class PermessageDeflateOptions
         }
 
         return $request->withAddedHeader('Sec-Websocket-Extensions', $header);
+    }
+
+    public static function permessageDeflateSupported($version = PHP_VERSION) {
+        if (!function_exists('deflate_init')) {
+            return false;
+        }
+        if (version_compare($version, '7.1.3', '>')) {
+            return true;
+        }
+        if (version_compare($version, '7.0.18', '>=')
+            && version_compare($version, '7.1.0', '<')) {
+            return true;
+        }
+
+        return false;
     }
 }
