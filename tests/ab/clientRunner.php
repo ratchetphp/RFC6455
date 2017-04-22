@@ -102,17 +102,19 @@ function getTestCases() {
     return $deferred->promise();
 }
 
+$cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(PermessageDeflateOptions::createDefault());
+
 function runTest($case)
 {
     global $factory;
     global $testServer;
+    global $cn;
 
     $casePath = "/runCase?case={$case}&agent=" . AGENT;
 
     $deferred = new Deferred();
 
-    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(PermessageDeflateOptions::createDefault());
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($cn, $deferred, $casePath, $case) {
         /** @var RequestInterface $cnRequest */
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
