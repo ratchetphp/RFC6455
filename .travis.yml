@@ -19,4 +19,4 @@ before_script:
     - sh tests/ab/run_ab_tests.sh
 
 script:
-    - phpunit
+    - vendor/bin/phpunit
