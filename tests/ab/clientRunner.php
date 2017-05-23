@@ -30,7 +30,6 @@ function echoStreamerFactory($conn, $permessageDeflateOptions = null)
         function (\Ratchet\RFC6455\Messaging\MessageInterface $msg, MessageBuffer $messageBuffer) use ($conn) {
             $messageBuffer->sendMessage($msg->getPayload(), true, $msg->isBinary());
         },
-        [$conn, 'write'],
         function (\Ratchet\RFC6455\Messaging\FrameInterface $frame, MessageBuffer $messageBuffer) use ($conn) {
             switch ($frame->getOpcode()) {
                 case Frame::OP_PING:
@@ -43,6 +42,7 @@ function echoStreamerFactory($conn, $permessageDeflateOptions = null)
         },
         false,
         null,
+        [$conn, 'write'],
         $permessageDeflateOptions
     );
 }
@@ -82,9 +82,10 @@ function getTestCases() {
                                 $deferred->resolve($msg->getPayload());
                                 $stream->close();
                             },
-                            function () {},
                             null,
-                            false
+                            false,
+                            null,
+                            function () {}
                         );
                     }
                 }
@@ -203,9 +204,10 @@ function createReport() {
                                 $deferred->resolve($msg->getPayload());
                                 $stream->close();
                             },
-                            function () {},
                             null,
-                            false
+                            false,
+                            null,
+                            function () {}
                         );
                     }
                 }
