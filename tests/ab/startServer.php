@@ -44,7 +44,6 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
         function (MessageInterface $message, MessageBuffer $messageBuffer) use ($response) {
             $messageBuffer->sendMessage($message->getPayload(), true, $message->isBinary());
         },
-        [$response, 'write'],
         function (FrameInterface $frame) use ($response, &$parser) {
             switch ($frame->getOpCode()) {
                 case Frame::OP_CLOSE:
@@ -59,6 +58,7 @@ $server->on('request', function (\React\Http\Request $request, \React\Http\Respo
         function () use ($uException) {
             return $uException;
         },
+        [$response, 'write'],
         $deflateOptions
     );
 

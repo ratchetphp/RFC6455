@@ -63,10 +63,10 @@ class MessageBuffer {
     function __construct(
         CloseFrameChecker $frameChecker,
         callable $onMessage,
-        callable $sender,
         callable $onControl = null,
         $expectMask = true,
         $exceptionFactory = null,
+        callable $sender = null,
         PermessageDeflateOptions $permessageDeflateOptions = null
     ) {
         $this->closeFrameChecker = $frameChecker;
@@ -84,6 +84,10 @@ class MessageBuffer {
         $this->permessageDeflateOptions = $permessageDeflateOptions ?: PermessageDeflateOptions::createDisabled();
 
         $this->deflate = $this->permessageDeflateOptions->getDeflate();
+
+        if ($this->deflate && !is_callable($this->sender)) {
+            throw new \InvalidArgumentException('sender must be set when deflate is enabled');
+        }
 
         $this->compressedMessage = false;
     }
@@ -276,6 +280,10 @@ class MessageBuffer {
 
 
     public function sendFrame(Frame $frame) {
+        if ($this->sender === null) {
+            throw new \Exception('To send frames using the MessageBuffer, sender must be set.');
+        }
+
         if ($this->deflate &&
             ($frame->getOpcode() === Frame::OP_TEXT || $frame->getOpcode() === Frame::OP_BINARY)) {
             $frame = $this->deflateFrame($frame);
