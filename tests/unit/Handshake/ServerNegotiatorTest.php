@@ -111,7 +111,9 @@ Accept-Language: en-US,en;q=0.8';
     }
 
     public function testBadSubprotocolResponse() {
-        $negotiator = new ServerNegotiator(new RequestVerifier(), [], true);
+        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator->setStrictSubProtocolCheck(true);
+        $negotiator->setSupportedSubProtocols([]);
 
         $requestText = 'GET / HTTP/1.1
 Host: 127.0.0.1:6789

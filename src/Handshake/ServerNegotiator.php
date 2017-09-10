@@ -13,15 +13,12 @@ class ServerNegotiator implements NegotiatorInterface {
      */
     private $verifier;
 
-    private $_supportedSubProtocols;
+    private $_supportedSubProtocols = [];
 
-    private $_strictSubProtocols;
+    private $_strictSubProtocols = false;
 
-    public function __construct(RequestVerifier $requestVerifier, array $supportedSubProtocols = [], $strictSubProtocol = false) {
+    public function __construct(RequestVerifier $requestVerifier) {
         $this->verifier = $requestVerifier;
-
-        $this->_supportedSubProtocols = $supportedSubProtocols;
-        $this->_strictSubProtocols = $strictSubProtocol;
     }
 
     /**
@@ -130,7 +127,6 @@ class ServerNegotiator implements NegotiatorInterface {
 
     /**
      * @param array $protocols
-     * @deprecated
      */
     function setSupportedSubProtocols(array $protocols) {
         $this->_supportedSubProtocols = array_flip($protocols);
@@ -143,7 +139,6 @@ class ServerNegotiator implements NegotiatorInterface {
      * @todo Consider extending this interface and moving this there.
      *       The spec does says the server can fail for this reason, but
      * it is not a requirement. This is an implementation detail.
-     * @deprecated
      */
     function setStrictSubProtocolCheck($enable) {
         $this->_strictSubProtocols = (boolean)$enable;
