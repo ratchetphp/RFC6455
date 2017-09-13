@@ -141,4 +141,35 @@ Accept-Language: en-US,en;q=0.8';
         $this->assertEquals('websocket', $response->getHeaderLine('Upgrade'));
         $this->assertEquals('13', $response->getHeaderLine('Sec-WebSocket-Version'));
     }
+
+    public function testNonStrictSubprotocolDoesNotIncludeHeaderWhenNoneAgreedOn() {
+        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator->setStrictSubProtocolCheck(false);
+        $negotiator->setSupportedSubProtocols(['someproto']);
+
+        $requestText = 'GET / HTTP/1.1
+Host: 127.0.0.1:6789
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade: websocket
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Protocol: someotherproto
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Encoding: gzip, deflate, sdch, br
+Accept-Language: en-US,en;q=0.8';
+
+        $request = \GuzzleHttp\Psr7\parse_request($requestText);
+
+        $response = $negotiator->handshake($request);
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(101, $response->getStatusCode());
+        $this->assertEquals('Upgrade', $response->getHeaderLine('Connection'));
+        $this->assertEquals('websocket', $response->getHeaderLine('Upgrade'));
+        $this->assertFalse($response->hasHeader('Sec-WebSocket-Protocol'));
+    }
 }

@@ -58,9 +58,11 @@ class ServerNegotiator implements NegotiatorInterface {
         $upgradeSuggestion = [
             'Connection'             => 'Upgrade',
             'Upgrade'                => 'websocket',
-            'Sec-WebSocket-Version'  => $this->getVersionNumber(),
-            'Sec-WebSocket-Protocol' => implode(', ', $this->_supportedSubProtocols)
+            'Sec-WebSocket-Version'  => $this->getVersionNumber()
         ];
+        if (count($this->_supportedSubProtocols) > 0) {
+            $upgradeSuggestion['Sec-WebSocket-Protocol'] = implode(', ', $this->_supportedSubProtocols);
+        }
         if (true !== $this->verifier->verifyUpgradeRequest($request->getHeader('Upgrade'))) {
             return new Response(426, $upgradeSuggestion, null, '1.1', 'Upgrade header MUST be provided');
         }
