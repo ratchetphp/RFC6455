@@ -1,5 +1,10 @@
 <?php
 use GuzzleHttp\Psr7\Uri;
+use Psr\Http\Message\RequestInterface;
+use Ratchet\RFC6455\Handshake\InvalidPermessageDeflateOptionsException;
+use Ratchet\RFC6455\Handshake\PermessageDeflateOptions;
+use Ratchet\RFC6455\Handshake\ResponseVerifier;
+use Ratchet\RFC6455\Messaging\MessageBuffer;
 use React\Promise\Deferred;
 use Ratchet\RFC6455\Messaging\Frame;
 
@@ -16,18 +21,16 @@ $dnsResolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
 $factory = new \React\SocketClient\Connector($loop, $dnsResolver);
 
-function echoStreamerFactory($conn)
+function echoStreamerFactory($conn, $permessageDeflateOptions = null)
 {
+    $permessageDeflateOptions = $permessageDeflateOptions ?: PermessageDeflateOptions::createDisabled();
+
     return new \Ratchet\RFC6455\Messaging\MessageBuffer(
         new \Ratchet\RFC6455\Messaging\CloseFrameChecker,
-        function (\Ratchet\RFC6455\Messaging\MessageInterface $msg) use ($conn) {
-            /** @var Frame $frame */
-            foreach ($msg as $frame) {
-                $frame->maskPayload();
-            }
-            $conn->write($msg->getContents());
+        function (\Ratchet\RFC6455\Messaging\MessageInterface $msg, MessageBuffer $messageBuffer) use ($conn) {
+            $messageBuffer->sendMessage($msg->getPayload(), true, $msg->isBinary());
         },
-        function (\Ratchet\RFC6455\Messaging\FrameInterface $frame) use ($conn) {
+        function (\Ratchet\RFC6455\Messaging\FrameInterface $frame, MessageBuffer $messageBuffer) use ($conn) {
             switch ($frame->getOpcode()) {
                 case Frame::OP_PING:
                     return $conn->write((new Frame($frame->getPayload(), true, Frame::OP_PONG))->maskPayload()->getContents());
@@ -37,7 +40,10 @@ function echoStreamerFactory($conn)
                     break;
             }
         },
-        false
+        false,
+        null,
+        [$conn, 'write'],
+        $permessageDeflateOptions
     );
 }
 
@@ -54,7 +60,7 @@ function getTestCases() {
         $rawResponse = "";
         $response = null;
 
-        /** @var \Ratchet\RFC6455\Messaging\Streaming\MessageBuffer $ms */
+        /** @var MessageBuffer $ms */
         $ms = null;
 
         $stream->on('data', function ($data) use ($stream, &$rawResponse, &$response, &$ms, $cn, $deferred, &$context, $cnRequest) {
@@ -77,7 +83,9 @@ function getTestCases() {
                                 $stream->close();
                             },
                             null,
-                            false
+                            false,
+                            null,
+                            function () {}
                         );
                     }
                 }
@@ -95,17 +103,20 @@ function getTestCases() {
     return $deferred->promise();
 }
 
+$cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(PermessageDeflateOptions::createDefault());
+
 function runTest($case)
 {
     global $factory;
     global $testServer;
+    global $cn;
 
     $casePath = "/runCase?case={$case}&agent=" . AGENT;
 
     $deferred = new Deferred();
 
-    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+    $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($cn, $deferred, $casePath, $case) {
+        /** @var RequestInterface $cnRequest */
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
         $rawResponse = "";
@@ -123,10 +134,20 @@ function runTest($case)
                     $response = \GuzzleHttp\Psr7\parse_response($rawResponse);
 
                     if (!$cn->validateResponse($cnRequest, $response)) {
+                        echo "Invalid response.\n";
                         $stream->end();
                         $deferred->reject();
                     } else {
-                        $ms = echoStreamerFactory($stream);
+                        try {
+                            $permessageDeflateOptions = PermessageDeflateOptions::fromRequestOrResponse($response)[0];
+                        } catch (InvalidPermessageDeflateOptionsException $e) {
+                            $stream->end();
+                        }
+
+                        $ms = echoStreamerFactory(
+                            $stream,
+                            $permessageDeflateOptions
+                        );
                     }
                 }
             }
@@ -184,7 +205,9 @@ function createReport() {
                                 $stream->close();
                             },
                             null,
-                            false
+                            false,
+                            null,
+                            function () {}
                         );
                     }
                 }

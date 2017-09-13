@@ -16,7 +16,7 @@ class ClientNegotiator {
      */
     private $defaultHeader;
 
-    function __construct() {
+    function __construct(PermessageDeflateOptions $perMessageDeflateOptions = null) {
         $this->verifier = new ResponseVerifier;
 
         $this->defaultHeader = new Request('GET', '', [
@@ -25,6 +25,22 @@ class ClientNegotiator {
           , 'Sec-WebSocket-Version' => $this->getVersion()
           , 'User-Agent'            => "Ratchet"
         ]);
+
+        if ($perMessageDeflateOptions === null) {
+            $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
+        }
+
+        // https://bugs.php.net/bug.php?id=73373
+        // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
+        $supported = PermessageDeflateOptions::permessageDeflateSupported();
+        if (!$supported) {
+            if ($perMessageDeflateOptions->getDeflate()) {
+                trigger_error('permessage-deflate is being disabled because it is not support by your PHP version.', E_USER_NOTICE);
+            }
+            $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
+        }
+
+        $this->defaultHeader = $perMessageDeflateOptions->addHeaderToRequest($this->defaultHeader);
     }
 
     public function generateRequest(UriInterface $uri) {
