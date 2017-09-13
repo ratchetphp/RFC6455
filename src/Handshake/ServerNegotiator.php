@@ -62,13 +62,7 @@ class ServerNegotiator implements NegotiatorInterface {
             'Sec-WebSocket-Protocol' => implode(', ', $this->_supportedSubProtocols)
         ];
         if (true !== $this->verifier->verifyUpgradeRequest($request->getHeader('Upgrade'))) {
-            return new Response(
-                426,
-                $upgradeSuggestion,
-                null,
-                '1.1',
-                'Upgrade header MUST be provided'
-            );
+            return new Response(426, $upgradeSuggestion, null, '1.1', 'Upgrade header MUST be provided');
         }
 
         if (true !== $this->verifier->verifyConnection($request->getHeader('Connection'))) {
@@ -80,12 +74,6 @@ class ServerNegotiator implements NegotiatorInterface {
         }
 
         if (true !== $this->verifier->verifyVersion($request->getHeader('Sec-WebSocket-Version'))) {
-            /*
-             * https://tools.ietf.org/html/rfc7230#section-6.7
-             * A server that sends a 426 (Upgrade Required) response MUST send an
-             * Upgrade header field to indicate the acceptable protocols, in order
-             * of descending preference
-             */
             return new Response(426, $upgradeSuggestion);
         }
 
@@ -99,7 +87,7 @@ class ServerNegotiator implements NegotiatorInterface {
             }, null);
 
             if ($this->_strictSubProtocols && null === $match) {
-                return new Response(426, $upgradeSuggestion);
+                return new Response(426, $upgradeSuggestion, null, '1.1', 'No Sec-WebSocket-Protocols requested supported');
             }
 
             if (null !== $match) {

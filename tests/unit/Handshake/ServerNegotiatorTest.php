@@ -136,7 +136,7 @@ Accept-Language: en-US,en;q=0.8';
 
         $this->assertEquals('1.1', $response->getProtocolVersion());
         $this->assertEquals(426, $response->getStatusCode());
-        $this->assertEquals('Upgrade Required', $response->getReasonPhrase());
+        $this->assertEquals('No Sec-WebSocket-Protocols requested supported', $response->getReasonPhrase());
         $this->assertEquals('Upgrade', $response->getHeaderLine('Connection'));
         $this->assertEquals('websocket', $response->getHeaderLine('Upgrade'));
         $this->assertEquals('13', $response->getHeaderLine('Sec-WebSocket-Version'));
