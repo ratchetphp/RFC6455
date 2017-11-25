@@ -85,7 +85,7 @@ class ServerNegotiator implements NegotiatorInterface {
             $subProtocols = array_map('trim', explode(',', implode(',', $subProtocols)));
 
             $match = array_reduce($subProtocols, function($accumulator, $protocol) {
-                return $accumulator ?: (isset($this->_supportedSubProtocols[$protocol]) ? $protocol : null);
+                return $accumulator ?: (in_array($protocol, $this->_supportedSubProtocols) ? $protocol : null);
             }, null);
 
             if ($this->_strictSubProtocols && null === $match) {
