@@ -376,12 +376,16 @@ class MessageBuffer {
         }
 
         if ($this->deflator === null) {
+            $bits = (int)$this->getDeflateWindowBits();
+            if ($bits === 8) {
+                $bits = 9;
+            }
             $this->deflator = deflate_init(
                 ZLIB_ENCODING_RAW,
                 [
                     'level'    => -1,
                     'memory'   => 8,
-                    'window'   => $this->getDeflateWindowBits(),
+                    'window'   => $bits,
                     'strategy' => ZLIB_DEFAULT_STRATEGY
                 ]
             );
