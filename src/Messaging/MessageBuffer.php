@@ -149,7 +149,7 @@ class MessageBuffer {
             if (true !== $msgCheck) {
                 $onControl($this->newCloseFrame($msgCheck, 'Ratchet detected an invalid UTF-8 payload'), $this);
             } else {
-                $onMessage($this->messageBuffer, $this);
+                $onMessage($msgBuffer, $this);
             }
 
             $this->messageBuffer = null;
