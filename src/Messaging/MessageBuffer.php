@@ -142,6 +142,10 @@ class MessageBuffer {
 
         if ($this->messageBuffer->isCoalesced()) {
             $msgCheck = $this->checkMessage($this->messageBuffer);
+
+            $msgBuffer = $this->messageBuffer;
+            $this->messageBuffer = null;
+
             if (true !== $msgCheck) {
                 $onControl($this->newCloseFrame($msgCheck, 'Ratchet detected an invalid UTF-8 payload'), $this);
             } else {
