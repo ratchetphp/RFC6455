@@ -22,11 +22,12 @@
     },
     "require": {
         "php": ">=5.4.2",
-        "guzzlehttp/psr7": "^1.0"
+        "psr/http-factory-implementation": "^1.0"
     },
     "require-dev": {
         "react/http": "^0.4.1",
         "react/socket-client": "^0.4.3",
-        "phpunit/phpunit": "4.8.*"
+        "phpunit/phpunit": "4.8.*",
+        "guzzlehttp/psr7": "^2.0-dev"
     }
 }

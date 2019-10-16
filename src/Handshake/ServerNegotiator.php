@@ -1,7 +1,7 @@
 <?php
 namespace Ratchet\RFC6455\Handshake;
 use Psr\Http\Message\RequestInterface;
-use GuzzleHttp\Psr7\Response;
+use Psr\Http\Message\ResponseFactoryInterface;
 
 /**
  * The latest version of the WebSocket protocol
@@ -13,12 +13,18 @@ class ServerNegotiator implements NegotiatorInterface {
      */
     private $verifier;
 
+    /**
+     * @var ResponseFactoryInterface
+     */
+    private $responseFactory;
+
     private $_supportedSubProtocols = [];
 
     private $_strictSubProtocols = false;
 
-    public function __construct(RequestVerifier $requestVerifier) {
+    public function __construct(RequestVerifier $requestVerifier, ResponseFactoryInterface $responseFactory) {
         $this->verifier = $requestVerifier;
+        $this->responseFactory = $responseFactory;
     }
 
     /**
@@ -39,47 +45,49 @@ class ServerNegotiator implements NegotiatorInterface {
      * {@inheritdoc}
      */
     public function handshake(RequestInterface $request) {
+        $response = $this->responseFactory->createResponse();
         if (true !== $this->verifier->verifyMethod($request->getMethod())) {
-            return new Response(405, ['Allow' => 'GET']);
+            return $response->withHeader('Allow', 'GET')->withStatus(405);
         }
 
         if (true !== $this->verifier->verifyHTTPVersion($request->getProtocolVersion())) {
-            return new Response(505);
+            return $response->withStatus(505);
         }
 
         if (true !== $this->verifier->verifyRequestURI($request->getUri()->getPath())) {
-            return new Response(400);
+            return $response->withStatus(400);
         }
 
         if (true !== $this->verifier->verifyHost($request->getHeader('Host'))) {
-            return new Response(400);
+            return $response->withStatus(400);
         }
 
-        $upgradeSuggestion = [
-            'Connection'             => 'Upgrade',
-            'Upgrade'                => 'websocket',
-            'Sec-WebSocket-Version'  => $this->getVersionNumber()
-        ];
+        $upgradeResponse = $response
+            ->withHeader('Connection'           , 'Upgrade')
+            ->withHeader('Upgrade'              , 'websocket')
+            ->withHeader('Sec-WebSocket-Version', $this->getVersionNumber());
+
         if (count($this->_supportedSubProtocols) > 0) {
-            $upgradeSuggestion['Sec-WebSocket-Protocol'] = implode(', ', array_keys($this->_supportedSubProtocols));
+            $upgradeResponse = $upgradeResponse->withHeader(
+                'Sec-WebSocket-Protocol', implode(', ', array_keys($this->_supportedSubProtocols))
+            );
         }
         if (true !== $this->verifier->verifyUpgradeRequest($request->getHeader('Upgrade'))) {
-            return new Response(426, $upgradeSuggestion, null, '1.1', 'Upgrade header MUST be provided');
+            return $upgradeResponse->withStatus(426, 'Upgrade header MUST be provided');
         }
 
         if (true !== $this->verifier->verifyConnection($request->getHeader('Connection'))) {
-            return new Response(400, [], null, '1.1', 'Connection Upgrade MUST be requested');
+            return $response->withStatus(400, 'Connection Upgrade MUST be requested');
         }
 
         if (true !== $this->verifier->verifyKey($request->getHeader('Sec-WebSocket-Key'))) {
-            return new Response(400, [], null, '1.1', 'Invalid Sec-WebSocket-Key');
+            return $response->withStatus(400, 'Invalid Sec-WebSocket-Key');
         }
 
         if (true !== $this->verifier->verifyVersion($request->getHeader('Sec-WebSocket-Version'))) {
-            return new Response(426, $upgradeSuggestion);
+            return $upgradeResponse->withStatus(426);
         }
 
-        $headers = [];
         $subProtocols = $request->getHeader('Sec-WebSocket-Protocol');
         if (count($subProtocols) > 0 || (count($this->_supportedSubProtocols) > 0 && $this->_strictSubProtocols)) {
             $subProtocols = array_map('trim', explode(',', implode(',', $subProtocols)));
@@ -89,20 +97,19 @@ class ServerNegotiator implements NegotiatorInterface {
             }, null);
 
             if ($this->_strictSubProtocols && null === $match) {
-                return new Response(426, $upgradeSuggestion, null, '1.1', 'No Sec-WebSocket-Protocols requested supported');
+                return $upgradeResponse->withStatus(426, 'No Sec-WebSocket-Protocols requested supported');
             }
 
             if (null !== $match) {
-                $headers['Sec-WebSocket-Protocol'] = $match;
+                $response = $response->withHeader('Sec-WebSocket-Protocol', $match);
             }
         }
-
-        return new Response(101, array_merge($headers, [
-            'Upgrade'              => 'websocket'
-          , 'Connection'           => 'Upgrade'
-          , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
-          , 'X-Powered-By'         => 'Ratchet'
-        ]));
+        return $response
+            ->withStatus(101)
+            ->withHeader('Upgrade'             , 'websocket')
+            ->withHeader('Connection'          , 'Upgrade')
+            ->withHeader('Sec-WebSocket-Accept', $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0]))
+            ->withHeader('X-Powered-By'        , 'Ratchet');
     }
 
     /**

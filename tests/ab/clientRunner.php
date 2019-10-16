@@ -2,6 +2,7 @@
 use GuzzleHttp\Psr7\Uri;
 use React\Promise\Deferred;
 use Ratchet\RFC6455\Messaging\Frame;
+use GuzzleHttp\Psr7\HttpFactory;
 
 require __DIR__ . '/../bootstrap.php';
 
@@ -48,7 +49,7 @@ function getTestCases() {
     $deferred = new Deferred();
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(new HttpFactory());
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001/getCaseCount'));
 
         $rawResponse = "";
@@ -105,7 +106,7 @@ function runTest($case)
     $deferred = new Deferred();
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred, $casePath, $case) {
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(new HttpFactory());
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
         $rawResponse = "";
@@ -155,7 +156,7 @@ function createReport() {
 
     $factory->create($testServer, 9001)->then(function (\React\Stream\Stream $stream) use ($deferred) {
         $reportPath = "/updateReports?agent=" . AGENT . "&shutdownOnComplete=true";
-        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator();
+        $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(new HttpFactory());
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $reportPath));
 
         $rawResponse = "";

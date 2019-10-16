@@ -3,7 +3,7 @@ namespace Ratchet\RFC6455\Handshake;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
-use GuzzleHttp\Psr7\Request;
+use Psr\Http\Message\RequestFactoryInterface;
 
 class ClientNegotiator {
     /**
@@ -16,20 +16,26 @@ class ClientNegotiator {
      */
     private $defaultHeader;
 
-    function __construct() {
-        $this->verifier = new ResponseVerifier;
+    /**
+     * @var RequestFactoryInterface
+     */
+    private $requestFactory;
 
-        $this->defaultHeader = new Request('GET', '', [
-            'Connection'            => 'Upgrade'
-          , 'Upgrade'               => 'websocket'
-          , 'Sec-WebSocket-Version' => $this->getVersion()
-          , 'User-Agent'            => "Ratchet"
-        ]);
+    function __construct(RequestFactoryInterface $requestFactory) {
+        $this->verifier = new ResponseVerifier;
+        $this->requestFactory = $requestFactory;
+
+        $this->defaultHeader = $this->requestFactory
+            ->createRequest('GET', '')
+            ->withHeader('Connection'           , 'Upgrade')
+            ->withHeader('Upgrade'              , 'websocket')
+            ->withHeader('Sec-WebSocket-Version', $this->getVersion())
+            ->withHeader('User-Agent'           , 'Ratchet');
     }
 
     public function generateRequest(UriInterface $uri) {
         return $this->defaultHeader->withUri($uri)
-            ->withHeader("Sec-WebSocket-Key", $this->generateKey());
+            ->withHeader('Sec-WebSocket-Key', $this->generateKey());
     }
 
     public function validateResponse(RequestInterface $request, ResponseInterface $response) {

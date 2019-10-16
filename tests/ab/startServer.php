@@ -2,6 +2,7 @@
 use Ratchet\RFC6455\Messaging\MessageInterface;
 use Ratchet\RFC6455\Messaging\FrameInterface;
 use Ratchet\RFC6455\Messaging\Frame;
+use GuzzleHttp\Psr7\HttpFactory;
 
 require_once __DIR__ . "/../bootstrap.php";
 
@@ -11,7 +12,10 @@ $socket = new \React\Socket\Server($loop);
 $server = new \React\Http\Server($socket);
 
 $closeFrameChecker = new \Ratchet\RFC6455\Messaging\CloseFrameChecker;
-$negotiator = new \Ratchet\RFC6455\Handshake\ServerNegotiator(new \Ratchet\RFC6455\Handshake\RequestVerifier);
+$negotiator = new \Ratchet\RFC6455\Handshake\ServerNegotiator(
+    new \Ratchet\RFC6455\Handshake\RequestVerifier,
+    new HttpFactory()
+);
 
 $uException = new \UnderflowException;
 

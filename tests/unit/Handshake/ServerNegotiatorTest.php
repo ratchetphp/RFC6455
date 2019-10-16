@@ -5,10 +5,12 @@ namespace Ratchet\RFC6455\Test\Unit\Handshake;
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 use Ratchet\RFC6455\Handshake\ServerNegotiator;
 
+use GuzzleHttp\Psr7\HttpFactory;
+
 class ServerNegotiatorTest extends \PHPUnit_Framework_TestCase
 {
     public function testNoUpgradeRequested() {
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
 
         $requestText = 'GET / HTTP/1.1
 Host: 127.0.0.1:6789
@@ -36,7 +38,7 @@ Accept-Language: en-US,en;q=0.8
     }
 
     public function testNoConnectionUpgradeRequested() {
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
 
         $requestText = 'GET / HTTP/1.1
 Host: 127.0.0.1:6789
@@ -62,7 +64,7 @@ Accept-Language: en-US,en;q=0.8
     }
 
     public function testInvalidSecWebsocketKey() {
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
 
         $requestText = 'GET / HTTP/1.1
 Host: 127.0.0.1:6789
@@ -89,7 +91,7 @@ Accept-Language: en-US,en;q=0.8
     }
 
     public function testInvalidSecWebsocketVersion() {
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
 
         $requestText = 'GET / HTTP/1.1
 Host: 127.0.0.1:6789
@@ -119,7 +121,7 @@ Accept-Language: en-US,en;q=0.8
     }
 
     public function testBadSubprotocolResponse() {
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
         $negotiator->setStrictSubProtocolCheck(true);
         $negotiator->setSupportedSubProtocols([]);
 
@@ -153,7 +155,7 @@ Accept-Language: en-US,en;q=0.8
     }
 
     public function testNonStrictSubprotocolDoesNotIncludeHeaderWhenNoneAgreedOn() {
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
         $negotiator->setStrictSubProtocolCheck(false);
         $negotiator->setSupportedSubProtocols(['someproto']);
 
@@ -187,7 +189,7 @@ Accept-Language: en-US,en;q=0.8
 
     public function testSuggestsAppropriateSubprotocol()
     {
-        $negotiator = new ServerNegotiator(new RequestVerifier());
+        $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());
         $negotiator->setStrictSubProtocolCheck(true);
         $negotiator->setSupportedSubProtocols(['someproto']);
 
