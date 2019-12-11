@@ -42,12 +42,24 @@ class MessageBuffer {
      */
     private $leftovers;
 
+    /**
+     * @var int
+     */
+    private $maxMessagePayloadSize;
+
+    /**
+     * @var int
+     */
+    private $maxFramePayloadSize;
+
     function __construct(
         CloseFrameChecker $frameChecker,
         callable $onMessage,
         callable $onControl = null,
         $expectMask = true,
-        $exceptionFactory = null
+        $exceptionFactory = null,
+        $maxMessagePayloadSize = null, // null for default - zero for no limit
+        $maxFramePayloadSize = null    // null for default - zero for no limit
     ) {
         $this->closeFrameChecker = $frameChecker;
         $this->checkForMask = (bool)$expectMask;
@@ -60,6 +72,31 @@ class MessageBuffer {
         $this->onControl = $onControl ?: function() {};
 
         $this->leftovers = '';
+
+        $memory_limit = \trim(\ini_get('memory_limit'));
+        $memory_limit_bytes = 0;
+        if ($memory_limit !== '') {
+            $shifty = ['k' => 0, 'm' => 10, 'g' => 20];
+            $multiplier = strtolower($memory_limit)[-1];
+            $memory_limit = (int)$memory_limit;
+            $memory_limit_bytes = in_array($multiplier, array_keys($shifty), true) ? $memory_limit * 1024 << $shifty[$multiplier] : $memory_limit;
+        }
+        if ($maxMessagePayloadSize === null) {
+            $maxMessagePayloadSize = $memory_limit_bytes / 4;
+        }
+        if ($maxFramePayloadSize === null) {
+            $maxFramePayloadSize = $memory_limit_bytes / 4;
+        }
+
+        if (!is_int($maxFramePayloadSize) || $maxFramePayloadSize > 0x7FFFFFFFFFFFFFFF || $maxFramePayloadSize < 0) { // this should be interesting on non-64 bit systems
+            throw New \InvalidArgumentException('maxFramePayloadSize is not valid');
+        }
+        $this->maxFramePayloadSize = $maxFramePayloadSize;
+
+        if (!is_int($maxMessagePayloadSize) || $maxMessagePayloadSize > 0x7FFFFFFFFFFFFFFF || $maxMessagePayloadSize < 0) {
+            throw New \InvalidArgumentException('maxMessagePayloadSize is not valid');
+        }
+        $this->maxMessagePayloadSize = $maxMessagePayloadSize;
     }
 
     public function onData($data) {
@@ -88,6 +125,29 @@ class MessageBuffer {
                 $payload_length  = $payload_length === 126
                     ? unpack('n', $bytesToUpack)[1]
                     : unpack('J', $bytesToUpack)[1];
+            }
+
+            $closeFrame = null;
+
+            if ($payload_length < 0) {
+                // this can happen when unpacking in php
+                $closeFrame = $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Invalid frame length');
+            }
+
+            if (!$closeFrame && $this->maxFramePayloadSize > 1 && $payload_length > $this->maxFramePayloadSize) {
+                $closeFrame = $this->newCloseFrame(Frame::CLOSE_TOO_BIG, 'Maximum frame size exceeded');
+            }
+
+            if (!$closeFrame && $this->maxMessagePayloadSize > 0
+                && $payload_length + ($this->messageBuffer ? $this->messageBuffer->getPayloadLength() : 0) > $this->maxMessagePayloadSize) {
+                $closeFrame = $this->newCloseFrame(Frame::CLOSE_TOO_BIG, 'Maximum message size exceeded');
+            }
+
+            if ($closeFrame !== null) {
+                $onControl = $this->onControl;
+                $onControl($closeFrame);
+                $this->leftovers = '';
+                return;
             }
 
             $isCoalesced = $dataLen - $frameStart >= $payload_length + $headerSize;
