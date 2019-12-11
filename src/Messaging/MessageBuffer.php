@@ -37,6 +37,11 @@ class MessageBuffer {
      */
     private $checkForMask;
 
+    /**
+     * @var string
+     */
+    private $leftovers;
+
     function __construct(
         CloseFrameChecker $frameChecker,
         callable $onMessage,
@@ -53,12 +58,51 @@ class MessageBuffer {
 
         $this->onMessage = $onMessage;
         $this->onControl = $onControl ?: function() {};
+
+        $this->leftovers = '';
     }
 
     public function onData($data) {
-        while (strlen($data) > 0) {
-            $data = $this->processData($data);
+        $data = $this->leftovers . $data;
+        $dataLen = strlen($data);
+        $spyFrame = new Frame();
+
+        if ($dataLen < 2) {
+            $this->leftovers = $data;
+            return;
         }
+        $currentByte = 0;
+        $frameStart = 0;
+        $spyFrame->addBuffer($data[$currentByte]);
+        $currentByte++;
+
+        while ($currentByte < $dataLen) {
+            $spyFrame->addBuffer($data[$currentByte]);
+            $currentByte ++;
+            try {
+                $payload_length = $spyFrame->getPayloadLength();
+                $payload_start  = $spyFrame->getPayloadStartingByte();
+            } catch (\UnderflowException $e) {
+                if ($currentByte < $dataLen) {
+                    continue;
+                }
+                break;
+            }
+
+            $isCoalesced = $dataLen - $frameStart >= $payload_length + $payload_start;
+
+
+            if (!$isCoalesced) {
+                break;
+            }
+            $this->processData(substr($data, $frameStart, $payload_length + $payload_start));
+            $spyFrame = new Frame();
+            $currentByte = $frameStart + $payload_length + $payload_start;
+            $frameStart = $currentByte;
+        }
+
+        $this->leftovers = substr($data, $frameStart);
+
     }
 
     /**
@@ -70,16 +114,12 @@ class MessageBuffer {
         $this->frameBuffer   ?: $this->frameBuffer   = $this->newFrame();
 
         $this->frameBuffer->addBuffer($data);
-        if (!$this->frameBuffer->isCoalesced()) {
-            return '';
-        }
 
         $onMessage = $this->onMessage;
         $onControl = $this->onControl;
 
         $this->frameBuffer = $this->frameCheck($this->frameBuffer);
 
-        $overflow = $this->frameBuffer->extractOverflow();
         $this->frameBuffer->unMaskPayload();
 
         $opcode = $this->frameBuffer->getOpcode();
@@ -108,8 +148,6 @@ class MessageBuffer {
                 $onMessage($msgBuffer);
             }
         }
-
-        return $overflow;
     }
 
     /**
