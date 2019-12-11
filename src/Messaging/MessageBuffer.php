@@ -65,44 +65,40 @@ class MessageBuffer {
     public function onData($data) {
         $data = $this->leftovers . $data;
         $dataLen = strlen($data);
-        $spyFrame = new Frame();
 
         if ($dataLen < 2) {
             $this->leftovers = $data;
             return;
         }
-        $currentByte = 0;
-        $frameStart = 0;
-        $spyFrame->addBuffer($data[$currentByte]);
-        $currentByte++;
 
-        while ($currentByte < $dataLen) {
-            $spyFrame->addBuffer($data[$currentByte]);
-            $currentByte ++;
-            try {
-                $payload_length = $spyFrame->getPayloadLength();
-                $payload_start  = $spyFrame->getPayloadStartingByte();
-            } catch (\UnderflowException $e) {
-                if ($currentByte < $dataLen) {
-                    continue;
-                }
+        $frameStart = 0;
+        while ($frameStart + 1 <= $dataLen) {
+            $headerSize     = 2;
+            $payload_length = unpack('C', $data[$frameStart + 1] & "\x7f")[1];
+            $isMasked       = ($data[$frameStart + 1] & "\x80") === "\x80";
+            $headerSize     += $isMasked ? 4 : 0;
+            if ($payload_length > 125 && ($dataLen - $frameStart < $headerSize + 125)) {
+                // no point of checking - this frame is going to be bigger than the buffer is right now
                 break;
             }
+            if ($payload_length > 125) {
+                $payloadLenBytes = $payload_length === 126 ? 2 : 8;
+                $headerSize      += $payloadLenBytes;
+                $bytesToUpack    = substr($data, $frameStart + 2, $payloadLenBytes);
+                $payload_length  = $payload_length === 126
+                    ? unpack('n', $bytesToUpack)[1]
+                    : unpack('J', $bytesToUpack)[1];
+            }
 
-            $isCoalesced = $dataLen - $frameStart >= $payload_length + $payload_start;
-
-
+            $isCoalesced = $dataLen - $frameStart >= $payload_length + $headerSize;
             if (!$isCoalesced) {
                 break;
             }
-            $this->processData(substr($data, $frameStart, $payload_length + $payload_start));
-            $spyFrame = new Frame();
-            $currentByte = $frameStart + $payload_length + $payload_start;
-            $frameStart = $currentByte;
+            $this->processData(substr($data, $frameStart, $payload_length + $headerSize));
+            $frameStart = $frameStart + $payload_length + $headerSize;
         }
 
         $this->leftovers = substr($data, $frameStart);
-
     }
 
     /**
