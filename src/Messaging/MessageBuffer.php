@@ -72,7 +72,7 @@ class MessageBuffer {
         }
 
         $frameStart = 0;
-        while ($frameStart + 1 <= $dataLen) {
+        while ($frameStart + 2 <= $dataLen) {
             $headerSize     = 2;
             $payload_length = unpack('C', $data[$frameStart + 1] & "\x7f")[1];
             $isMasked       = ($data[$frameStart + 1] & "\x80") === "\x80";
