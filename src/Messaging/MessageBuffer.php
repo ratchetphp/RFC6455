@@ -77,7 +77,7 @@ class MessageBuffer {
         $memory_limit_bytes = 0;
         if ($memory_limit !== '') {
             $shifty = ['k' => 0, 'm' => 10, 'g' => 20];
-            $multiplier = strtolower($memory_limit)[-1];
+            $multiplier = strlen($memory_limit) > 1 ? substr(strtolower($memory_limit), -1) : '';
             $memory_limit = (int)$memory_limit;
             $memory_limit_bytes = in_array($multiplier, array_keys($shifty), true) ? $memory_limit * 1024 << $shifty[$multiplier] : $memory_limit;
         }
