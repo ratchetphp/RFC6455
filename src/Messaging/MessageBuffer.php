@@ -73,14 +73,7 @@ class MessageBuffer {
 
         $this->leftovers = '';
 
-        $memory_limit = \trim(\ini_get('memory_limit'));
-        $memory_limit_bytes = 0;
-        if ($memory_limit !== '') {
-            $shifty = ['k' => 0, 'm' => 10, 'g' => 20];
-            $multiplier = strlen($memory_limit) > 1 ? substr(strtolower($memory_limit), -1) : '';
-            $memory_limit = (int)$memory_limit;
-            $memory_limit_bytes = in_array($multiplier, array_keys($shifty), true) ? $memory_limit * 1024 << $shifty[$multiplier] : $memory_limit;
-        }
+        $memory_limit_bytes = static::getMemoryLimit();
         if ($maxMessagePayloadSize === null) {
             $maxMessagePayloadSize = $memory_limit_bytes / 4;
         }
@@ -325,5 +318,25 @@ class MessageBuffer {
 
     public function newCloseFrame($code, $reason = '') {
         return $this->newFrame(pack('n', $code) . $reason, true, Frame::OP_CLOSE);
+    }
+
+    /**
+     * This is a separate function for testing purposes
+     * $memory_limit is only used for testing
+     *
+     * @param null|string $memory_limit
+     * @return int
+     */
+    private static function getMemoryLimit($memory_limit = null) {
+        $memory_limit = $memory_limit === null ? \trim(\ini_get('memory_limit')) : $memory_limit;
+        $memory_limit_bytes = 0;
+        if ($memory_limit !== '') {
+            $shifty = ['k' => 0, 'm' => 10, 'g' => 20];
+            $multiplier = strlen($memory_limit) > 1 ? substr(strtolower($memory_limit), -1) : '';
+            $memory_limit = (int)$memory_limit;
+            $memory_limit_bytes = in_array($multiplier, array_keys($shifty), true) ? $memory_limit * 1024 << $shifty[$multiplier] : $memory_limit;
+        }
+
+        return $memory_limit_bytes;
     }
 }

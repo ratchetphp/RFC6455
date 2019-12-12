@@ -223,4 +223,59 @@ class MessageBufferTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(Frame::OP_CLOSE, $controlFrame->getOpcode());
         $this->assertEquals([Frame::CLOSE_TOO_BIG], array_merge(unpack('n*', substr($controlFrame->getPayload(), 0, 2))));
     }
+
+    /**
+     * Some test cases from memory limit inspired by https://github.com/BrandEmbassy/php-memory
+     *
+     * Here is the license for that project:
+     * MIT License
+     *
+     * Copyright (c) 2018 Brand Embassy
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining a copy
+     * of this software and associated documentation files (the "Software"), to deal
+     * in the Software without restriction, including without limitation the rights
+     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the Software is
+     * furnished to do so, subject to the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be included in all
+     * copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+     * SOFTWARE.
+     */
+
+    /**
+     * @dataProvider phpConfigurationProvider
+     *
+     * @param string $phpConfigurationValue
+     * @param int $expectedLimit
+     */
+    public function testMemoryLimits($phpConfigurationValue, $expectedLimit) {
+        $method = new \ReflectionMethod('Ratchet\RFC6455\Messaging\MessageBuffer', 'getMemoryLimit');
+        $method->setAccessible(true);
+        $actualLimit = $method->invoke(null, $phpConfigurationValue);
+
+        $this->assertSame($expectedLimit, $actualLimit);
+    }
+
+    public function phpConfigurationProvider() {
+        return [
+            'without unit type, just bytes' => ['500', 500],
+            '1 GB with big "G"' => ['1G', 1 * 1024 * 1024 * 1024],
+            '128 MB with big "M"' => ['128M', 128 * 1024 * 1024],
+            '128 MB with small "m"' => ['128m', 128 * 1024 * 1024],
+            '24 kB with small "k"' => ['24k', 24 * 1024],
+            '2 GB with small "g"' => ['2g', 2 * 1024 * 1024 * 1024],
+            'unlimited memory' => ['-1', -1],
+            'invalid float value' => ['2.5M', 2 * 1024 * 1024],
+            'empty value' => ['', 0]
+        ];
+    }
 }
