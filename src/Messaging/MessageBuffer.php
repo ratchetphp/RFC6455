@@ -105,6 +105,7 @@ class MessageBuffer {
 
         if ($dataLen < 2) {
             $this->leftovers = $data;
+
             return;
         }
 
@@ -147,6 +148,7 @@ class MessageBuffer {
                 $onControl = $this->onControl;
                 $onControl($closeFrame);
                 $this->leftovers = '';
+
                 return;
             }
 
