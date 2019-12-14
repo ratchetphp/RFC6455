@@ -74,6 +74,7 @@ class MessageBuffer {
         $this->leftovers = '';
 
         $memory_limit_bytes = static::getMemoryLimit();
+
         if ($maxMessagePayloadSize === null) {
             $maxMessagePayloadSize = $memory_limit_bytes / 4;
         }
@@ -337,6 +338,6 @@ class MessageBuffer {
             $memory_limit_bytes = in_array($multiplier, array_keys($shifty), true) ? $memory_limit * 1024 << $shifty[$multiplier] : $memory_limit;
         }
 
-        return $memory_limit_bytes;
+        return $memory_limit_bytes < 0 ? 0 : $memory_limit_bytes;
     }
 }

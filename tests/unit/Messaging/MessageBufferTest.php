@@ -273,9 +273,93 @@ class MessageBufferTest extends \PHPUnit_Framework_TestCase
             '128 MB with small "m"' => ['128m', 128 * 1024 * 1024],
             '24 kB with small "k"' => ['24k', 24 * 1024],
             '2 GB with small "g"' => ['2g', 2 * 1024 * 1024 * 1024],
-            'unlimited memory' => ['-1', -1],
+            'unlimited memory' => ['-1', 0],
             'invalid float value' => ['2.5M', 2 * 1024 * 1024],
-            'empty value' => ['', 0]
+            'empty value' => ['', 0],
+            'invalid ini setting' => ['whatever it takes', 0]
         ];
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testInvalidMaxFramePayloadSizes() {
+        $messageBuffer = new MessageBuffer(
+            new CloseFrameChecker(),
+            function (Message $message) {},
+            function (Frame $frame) {},
+            false,
+            null,
+            0,
+            0x8000000000000000
+        );
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testInvalidMaxMessagePayloadSizes() {
+        $messageBuffer = new MessageBuffer(
+            new CloseFrameChecker(),
+            function (Message $message) {},
+            function (Frame $frame) {},
+            false,
+            null,
+            0x8000000000000000,
+            0
+        );
+    }
+
+    /**
+     * @dataProvider phpConfigurationProvider
+     *
+     * @param string $phpConfigurationValue
+     * @param int $expectedLimit
+     *
+     * @runInSeparateProcess
+     */
+    public function testIniSizes($phpConfigurationValue, $expectedLimit) {
+        ini_set('memory_limit', $phpConfigurationValue);
+        $messageBuffer = new MessageBuffer(
+            new CloseFrameChecker(),
+            function (Message $message) {},
+            function (Frame $frame) {},
+            false,
+            null
+        );
+
+        if ($expectedLimit === -1) {
+            $expectedLimit = 0;
+        }
+
+        $prop = new \ReflectionProperty($messageBuffer, 'maxMessagePayloadSize');
+        $prop->setAccessible(true);
+        $this->assertEquals($expectedLimit / 4, $prop->getValue($messageBuffer));
+
+        $prop = new \ReflectionProperty($messageBuffer, 'maxFramePayloadSize');
+        $prop->setAccessible(true);
+        $this->assertEquals($expectedLimit / 4, $prop->getValue($messageBuffer));
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testInvalidIniSize() {
+        ini_set('memory_limit', 'lots of memory');
+        $messageBuffer = new MessageBuffer(
+            new CloseFrameChecker(),
+            function (Message $message) {},
+            function (Frame $frame) {},
+            false,
+            null
+        );
+
+        $prop = new \ReflectionProperty($messageBuffer, 'maxMessagePayloadSize');
+        $prop->setAccessible(true);
+        $this->assertEquals(0, $prop->getValue($messageBuffer));
+
+        $prop = new \ReflectionProperty($messageBuffer, 'maxFramePayloadSize');
+        $prop->setAccessible(true);
+        $this->assertEquals(0, $prop->getValue($messageBuffer));
     }
 }
