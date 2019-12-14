@@ -9,3 +9,5 @@ sleep 2
 php startServer.php &
 sleep 3
 wstest -m fuzzingclient -s fuzzingclient.json
+sleep 1
+kill $(ps aux | grep 'php startServer.php' | awk '{print $2}' | head -n 1)
