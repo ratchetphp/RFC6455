@@ -317,7 +317,7 @@ class MessageBufferTest extends \PHPUnit_Framework_TestCase
      * @param int $expectedLimit
      *
      * @runInSeparateProcess
-     * @requires PHP >= 7.0
+     * @requires PHP 7.0
      */
     public function testIniSizes($phpConfigurationValue, $expectedLimit) {
         ini_set('memory_limit', $phpConfigurationValue);
@@ -344,7 +344,7 @@ class MessageBufferTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @runInSeparateProcess
-     * @requires PHP >= 7.0
+     * @requires PHP 7.0
      */
     public function testInvalidIniSize() {
         ini_set('memory_limit', 'lots of memory');
