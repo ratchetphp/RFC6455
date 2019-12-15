@@ -83,12 +83,12 @@ class MessageBuffer {
         }
 
         if (!is_int($maxFramePayloadSize) || $maxFramePayloadSize > 0x7FFFFFFFFFFFFFFF || $maxFramePayloadSize < 0) { // this should be interesting on non-64 bit systems
-            throw New \InvalidArgumentException('maxFramePayloadSize is not valid');
+            throw new \InvalidArgumentException($maxFramePayloadSize . ' is not a valid maxFramePayloadSize');
         }
         $this->maxFramePayloadSize = $maxFramePayloadSize;
 
         if (!is_int($maxMessagePayloadSize) || $maxMessagePayloadSize > 0x7FFFFFFFFFFFFFFF || $maxMessagePayloadSize < 0) {
-            throw New \InvalidArgumentException('maxMessagePayloadSize is not valid');
+            throw new \InvalidArgumentException($maxMessagePayloadSize . 'is not a valid maxMessagePayloadSize');
         }
         $this->maxMessagePayloadSize = $maxMessagePayloadSize;
     }
