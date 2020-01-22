@@ -45,6 +45,11 @@ class MessageBuffer {
     private $sender;
 
     /**
+     * @var string
+     */
+    private $leftovers;
+
+    /**
      * @var int
      */
     private $streamingMessageOpCode = -1;
@@ -59,6 +64,20 @@ class MessageBuffer {
      */
     private $deflate = false;
 
+    /**
+     * @var int
+     */
+    private $maxMessagePayloadSize;
+
+    /**
+     * @var int
+     */
+    private $maxFramePayloadSize;
+
+    /**
+     * @var bool
+     */
+    private $compressedMessage;
 
     function __construct(
         CloseFrameChecker $frameChecker,
@@ -66,6 +85,8 @@ class MessageBuffer {
         callable $onControl = null,
         $expectMask = true,
         $exceptionFactory = null,
+        $maxMessagePayloadSize = null, // null for default - zero for no limit
+        $maxFramePayloadSize = null,   // null for default - zero for no limit
         callable $sender = null,
         PermessageDeflateOptions $permessageDeflateOptions = null
     ) {
@@ -90,12 +111,91 @@ class MessageBuffer {
         }
 
         $this->compressedMessage = false;
+
+        $this->leftovers = '';
+
+        $memory_limit_bytes = static::getMemoryLimit();
+
+        if ($maxMessagePayloadSize === null) {
+            $maxMessagePayloadSize = $memory_limit_bytes / 4;
+        }
+        if ($maxFramePayloadSize === null) {
+            $maxFramePayloadSize = $memory_limit_bytes / 4;
+        }
+
+        if (!is_int($maxFramePayloadSize) || $maxFramePayloadSize > 0x7FFFFFFFFFFFFFFF || $maxFramePayloadSize < 0) { // this should be interesting on non-64 bit systems
+            throw new \InvalidArgumentException($maxFramePayloadSize . ' is not a valid maxFramePayloadSize');
+        }
+        $this->maxFramePayloadSize = $maxFramePayloadSize;
+
+        if (!is_int($maxMessagePayloadSize) || $maxMessagePayloadSize > 0x7FFFFFFFFFFFFFFF || $maxMessagePayloadSize < 0) {
+            throw new \InvalidArgumentException($maxMessagePayloadSize . 'is not a valid maxMessagePayloadSize');
+        }
+        $this->maxMessagePayloadSize = $maxMessagePayloadSize;
     }
 
     public function onData($data) {
-        while (strlen($data) > 0) {
-            $data = $this->processData($data);
+        $data = $this->leftovers . $data;
+        $dataLen = strlen($data);
+
+        if ($dataLen < 2) {
+            $this->leftovers = $data;
+
+            return;
         }
+
+        $frameStart = 0;
+        while ($frameStart + 2 <= $dataLen) {
+            $headerSize     = 2;
+            $payload_length = unpack('C', $data[$frameStart + 1] & "\x7f")[1];
+            $isMasked       = ($data[$frameStart + 1] & "\x80") === "\x80";
+            $headerSize     += $isMasked ? 4 : 0;
+            if ($payload_length > 125 && ($dataLen - $frameStart < $headerSize + 125)) {
+                // no point of checking - this frame is going to be bigger than the buffer is right now
+                break;
+            }
+            if ($payload_length > 125) {
+                $payloadLenBytes = $payload_length === 126 ? 2 : 8;
+                $headerSize      += $payloadLenBytes;
+                $bytesToUpack    = substr($data, $frameStart + 2, $payloadLenBytes);
+                $payload_length  = $payload_length === 126
+                    ? unpack('n', $bytesToUpack)[1]
+                    : unpack('J', $bytesToUpack)[1];
+            }
+
+            $closeFrame = null;
+
+            if ($payload_length < 0) {
+                // this can happen when unpacking in php
+                $closeFrame = $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Invalid frame length');
+            }
+
+            if (!$closeFrame && $this->maxFramePayloadSize > 1 && $payload_length > $this->maxFramePayloadSize) {
+                $closeFrame = $this->newCloseFrame(Frame::CLOSE_TOO_BIG, 'Maximum frame size exceeded');
+            }
+
+            if (!$closeFrame && $this->maxMessagePayloadSize > 0
+                && $payload_length + ($this->messageBuffer ? $this->messageBuffer->getPayloadLength() : 0) > $this->maxMessagePayloadSize) {
+                $closeFrame = $this->newCloseFrame(Frame::CLOSE_TOO_BIG, 'Maximum message size exceeded');
+            }
+
+            if ($closeFrame !== null) {
+                $onControl = $this->onControl;
+                $onControl($closeFrame);
+                $this->leftovers = '';
+
+                return;
+            }
+
+            $isCoalesced = $dataLen - $frameStart >= $payload_length + $headerSize;
+            if (!$isCoalesced) {
+                break;
+            }
+            $this->processData(substr($data, $frameStart, $payload_length + $headerSize));
+            $frameStart = $frameStart + $payload_length + $headerSize;
+        }
+
+        $this->leftovers = substr($data, $frameStart);
     }
 
     /**
@@ -107,16 +207,12 @@ class MessageBuffer {
         $this->frameBuffer   ?: $this->frameBuffer   = $this->newFrame();
 
         $this->frameBuffer->addBuffer($data);
-        if (!$this->frameBuffer->isCoalesced()) {
-            return '';
-        }
 
         $onMessage = $this->onMessage;
         $onControl = $this->onControl;
 
         $this->frameBuffer = $this->frameCheck($this->frameBuffer);
 
-        $overflow = $this->frameBuffer->extractOverflow();
         $this->frameBuffer->unMaskPayload();
 
         $opcode = $this->frameBuffer->getOpcode();
@@ -159,8 +255,6 @@ class MessageBuffer {
                 $this->inflator = null;
             }
         }
-
-        return $overflow;
     }
 
     /**
@@ -282,7 +376,6 @@ class MessageBuffer {
         return $this->newFrame(pack('n', $code) . $reason, true, Frame::OP_CLOSE);
     }
 
-
     public function sendFrame(Frame $frame) {
         if ($this->sender === null) {
             throw new \Exception('To send frames using the MessageBuffer, sender must be set.');
@@ -372,9 +465,11 @@ class MessageBuffer {
             $frame->getOpcode()
         );
     }
+
     private $deflator;
 
-    private function deflateFrame(Frame $frame) {
+    private function deflateFrame(Frame $frame)
+    {
         if ($frame->getRsv1()) {
             return $frame; // frame is already deflated
         }
@@ -413,11 +508,11 @@ class MessageBuffer {
 //                $payload .= deflate_add($this->deflator, $part, $flags);
 //            }
 //        } else {
-            $payload = deflate_add(
-                $this->deflator,
-                $frame->getPayload(),
-                ZLIB_SYNC_FLUSH
-            );
+        $payload = deflate_add(
+            $this->deflator,
+            $frame->getPayload(),
+            ZLIB_SYNC_FLUSH
+        );
 //        }
 
         $deflatedFrame = new Frame(
@@ -431,5 +526,25 @@ class MessageBuffer {
         }
 
         return $deflatedFrame;
+    }
+
+    /**
+     * This is a separate function for testing purposes
+     * $memory_limit is only used for testing
+     *
+     * @param null|string $memory_limit
+     * @return int
+     */
+    private static function getMemoryLimit($memory_limit = null) {
+        $memory_limit = $memory_limit === null ? \trim(\ini_get('memory_limit')) : $memory_limit;
+        $memory_limit_bytes = 0;
+        if ($memory_limit !== '') {
+            $shifty = ['k' => 0, 'm' => 10, 'g' => 20];
+            $multiplier = strlen($memory_limit) > 1 ? substr(strtolower($memory_limit), -1) : '';
+            $memory_limit = (int)$memory_limit;
+            $memory_limit_bytes = in_array($multiplier, array_keys($shifty), true) ? $memory_limit * 1024 << $shifty[$multiplier] : $memory_limit;
+        }
+
+        return $memory_limit_bytes < 0 ? 0 : $memory_limit_bytes;
     }
 }

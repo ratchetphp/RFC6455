@@ -16,8 +16,9 @@ php clientRunner.php
 sleep 2
 
 php startServer.php &
-PHP_SERVER_PID=$!
 sleep 3
-wstest -m fuzzingclient -s fuzzingclient$SKIP_DEFLATE.json
 
-kill $PHP_SERVER_PID
+wstest -m fuzzingclient -s fuzzingclient$SKIP_DEFLATE.json
+sleep 1
+kill $(ps aux | grep 'php startServer.php' | awk '{print $2}' | head -n 1)
+
