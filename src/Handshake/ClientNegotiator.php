@@ -34,7 +34,7 @@ class ClientNegotiator {
         // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
         $supported = PermessageDeflateOptions::permessageDeflateSupported();
         if (!$supported) {
-            if ($perMessageDeflateOptions->getDeflate()) {
+            if ($perMessageDeflateOptions->isEnabled()) {
                 trigger_error('permessage-deflate is being disabled because it is not support by your PHP version.', E_USER_NOTICE);
             }
             $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();

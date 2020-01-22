@@ -62,7 +62,7 @@ class MessageBuffer {
     /**
      * @var bool
      */
-    private $deflate = false;
+    private $deflateEnabled = false;
 
     /**
      * @var int
@@ -104,9 +104,9 @@ class MessageBuffer {
 
         $this->permessageDeflateOptions = $permessageDeflateOptions ?: PermessageDeflateOptions::createDisabled();
 
-        $this->deflate = $this->permessageDeflateOptions->getDeflate();
+        $this->deflateEnabled = $this->permessageDeflateOptions->isEnabled();
 
-        if ($this->deflate && !is_callable($this->sender)) {
+        if ($this->deflateEnabled && !is_callable($this->sender)) {
             throw new \InvalidArgumentException('sender must be set when deflate is enabled');
         }
 
@@ -263,7 +263,7 @@ class MessageBuffer {
      * @return \Ratchet\RFC6455\Messaging\FrameInterface|FrameInterface
      */
     public function frameCheck(FrameInterface $frame) {
-        if ((false !== $frame->getRsv1() && !$this->deflate) ||
+        if ((false !== $frame->getRsv1() && !$this->deflateEnabled) ||
             false !== $frame->getRsv2() ||
             false !== $frame->getRsv3()
         ) {
@@ -381,7 +381,7 @@ class MessageBuffer {
             throw new \Exception('To send frames using the MessageBuffer, sender must be set.');
         }
 
-        if ($this->deflate &&
+        if ($this->deflateEnabled &&
             ($frame->getOpcode() === Frame::OP_TEXT || $frame->getOpcode() === Frame::OP_BINARY)) {
             $frame = $this->deflateFrame($frame);
         }

@@ -126,7 +126,7 @@ class ServerNegotiator implements NegotiatorInterface {
             return new Response(400, [], null, '1.1', $e->getMessage());
         }
 
-        if ($this->enablePerMessageDeflate && $perMessageDeflateRequest->getDeflate()) {
+        if ($this->enablePerMessageDeflate && $perMessageDeflateRequest->isEnabled()) {
             $response = $perMessageDeflateRequest->addHeaderToResponse($response);
         }
 

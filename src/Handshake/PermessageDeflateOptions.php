@@ -12,7 +12,7 @@ final class PermessageDeflateOptions
     /* this is a private instead of const for 5.4 compatibility */
     private static $VALID_BITS = ['8', '9', '10', '11', '12', '13', '14', '15'];
 
-    private $deflate = false;
+    private $deflateEnabled = false;
 
     private $server_no_context_takeover;
     private $client_no_context_takeover;
@@ -22,12 +22,13 @@ final class PermessageDeflateOptions
     private function __construct() { }
 
     public static function createDefault() {
-        $new = new static();
-        $new->deflate = true;
-        $new->client_max_window_bits = self::MAX_WINDOW_BITS;
+        $new                             = new static();
+        $new->deflateEnabled             = true;
+        $new->client_max_window_bits     = self::MAX_WINDOW_BITS;
         $new->client_no_context_takeover = false;
-        $new->server_max_window_bits = self::MAX_WINDOW_BITS;
+        $new->server_max_window_bits     = self::MAX_WINDOW_BITS;
         $new->server_no_context_takeover = false;
+
         return $new;
     }
 
@@ -96,8 +97,8 @@ final class PermessageDeflateOptions
             }
 
             array_shift($parts);
-            $options = new static();
-            $options->deflate = true;
+            $options                 = new static();
+            $options->deflateEnabled = true;
             foreach ($parts as $part) {
                 $kv = explode('=', $part);
                 $key = $kv[0];
@@ -152,11 +153,6 @@ final class PermessageDeflateOptions
         return $optionSets;
     }
 
-//    public static function validateResponseToRequest(ResponseInterface $response, RequestInterface $request) {
-//        $requestOptions = static::fromRequestOrResponse($request);
-//        $responseOptions = static::fromRequestOrResponse($response);
-//    }
-
     /**
      * @return mixed
      */
@@ -192,9 +188,9 @@ final class PermessageDeflateOptions
     /**
      * @return bool
      */
-    public function getDeflate()
+    public function isEnabled()
     {
-        return $this->deflate;
+        return $this->deflateEnabled;
     }
 
     /**
@@ -203,7 +199,7 @@ final class PermessageDeflateOptions
      */
     public function addHeaderToResponse(ResponseInterface $response)
     {
-        if (!$this->deflate) {
+        if (!$this->deflateEnabled) {
             return $response;
         }
 
@@ -225,7 +221,7 @@ final class PermessageDeflateOptions
     }
 
     public function addHeaderToRequest(RequestInterface $request) {
-        if (!$this->deflate) {
+        if (!$this->deflateEnabled) {
             return $request;
         }
 
