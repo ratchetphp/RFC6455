@@ -47,6 +47,24 @@ class ResponseVerifier {
     }
 
     public function verifySubProtocol(array $requestHeader, array $responseHeader) {
+        // [ "protocol1,subprotocol2" ] => [ "protocol1", "subprotocol2" ]
+        $spread = function (array $commaSeparatedHeaders) {
+            $headers = array();
+
+            foreach ($commaSeparatedHeaders as $commaSeparatedHeader) {
+                $headers = array_merge($headers, explode(',', $commaSeparatedHeader));
+            }
+
+            return $headers;
+        };
+
+        if ($requestHeader) {
+            $requestHeader = $spread($requestHeader);
+        }
+        if ($responseHeader) {
+            $responseHeader = $spread($responseHeader);
+        }
+
         return 0 === count($responseHeader) || count(array_intersect($responseHeader, $requestHeader)) > 0;
     }
 }
