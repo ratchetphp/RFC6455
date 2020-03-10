@@ -21,7 +21,7 @@ final class PermessageDeflateOptions
 
     private function __construct() { }
 
-    public static function createDefault() {
+    public static function createEnabled() {
         $new                             = new static();
         $new->deflateEnabled             = true;
         $new->client_max_window_bits     = self::MAX_WINDOW_BITS;

@@ -107,7 +107,7 @@ function getTestCases() {
     return $deferred->promise();
 }
 
-$cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(PermessageDeflateOptions::createDefault());
+$cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(PermessageDeflateOptions::createEnabled());
 
 function runTest($case)
 {
@@ -120,7 +120,7 @@ function runTest($case)
     $deferred = new Deferred();
 
     $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred, $casePath, $case) {
-        $cn = new ClientNegotiator(PermessageDeflateOptions::createDefault());
+        $cn = new ClientNegotiator(PermessageDeflateOptions::createEnabled());
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
         $rawResponse = "";

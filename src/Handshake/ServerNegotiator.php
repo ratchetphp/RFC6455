@@ -26,12 +26,10 @@ class ServerNegotiator implements NegotiatorInterface {
         // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
         $supported = PermessageDeflateOptions::permessageDeflateSupported();
         if ($enablePerMessageDeflate && !$supported) {
-            trigger_error('permessage-deflate is being disabled because it is not support by your PHP version.', E_USER_NOTICE);
-            $enablePerMessageDeflate = false;
+            throw new \Exception('permessage-deflate is not supported by your PHP version (need >=7.1.4 or >=7.0.18).');
         }
         if ($enablePerMessageDeflate && !function_exists('deflate_add')) {
-            trigger_error('permessage-deflate is being disabled because you do not have the zlib extension.', E_USER_NOTICE);
-            $enablePerMessageDeflate = false;
+            throw new \Exception('permessage-deflate is not supported because you do not have the zlib extension.');
         }
 
         $this->enablePerMessageDeflate = $enablePerMessageDeflate;
