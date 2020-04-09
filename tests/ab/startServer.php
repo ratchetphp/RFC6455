@@ -1,4 +1,6 @@
 <?php
+
+use GuzzleHttp\Psr7\Response;
 use Ratchet\RFC6455\Handshake\PermessageDeflateOptions;
 use Ratchet\RFC6455\Messaging\MessageBuffer;
 use Ratchet\RFC6455\Messaging\MessageInterface;
@@ -12,16 +14,16 @@ $loop   = \React\EventLoop\Factory::create();
 $socket = new \React\Socket\Server('127.0.0.1:9001', $loop);
 
 $closeFrameChecker = new \Ratchet\RFC6455\Messaging\CloseFrameChecker;
-$negotiator = new \Ratchet\RFC6455\Handshake\ServerNegotiator(new \Ratchet\RFC6455\Handshake\RequestVerifier, true);
+$negotiator = new \Ratchet\RFC6455\Handshake\ServerNegotiator(new \Ratchet\RFC6455\Handshake\RequestVerifier, PermessageDeflateOptions::permessageDeflateSupported());
 
 $uException = new \UnderflowException;
 
 
-$socket->on('connection', function (React\Socket\ConnectionInterface $connection) use ($negotiator, $closeFrameChecker, $uException) {
+$socket->on('connection', function (React\Socket\ConnectionInterface $connection) use ($negotiator, $closeFrameChecker, $uException, $socket) {
     $headerComplete = false;
     $buffer = '';
     $parser = null;
-    $connection->on('data', function ($data) use ($connection, &$parser, &$headerComplete, &$buffer, $negotiator, $closeFrameChecker, $uException) {
+    $connection->on('data', function ($data) use ($connection, &$parser, &$headerComplete, &$buffer, $negotiator, $closeFrameChecker, $uException, $socket) {
         if ($headerComplete) {
             $parser->onData($data);
             return;
@@ -37,6 +39,12 @@ $socket->on('connection', function (React\Socket\ConnectionInterface $connection
         $negotiatorResponse = $negotiator->handshake($psrRequest);
 
         $negotiatorResponse = $negotiatorResponse->withAddedHeader("Content-Length", "0");
+
+        if ($negotiatorResponse->getStatusCode() !== 101 && $psrRequest->getUri()->getPath() === '/shutdown') {
+            $connection->end(\GuzzleHttp\Psr7\str(new Response(200, [], 'Shutting down echo server.')));
+            $socket->close();
+            return;
+        };
 
         $connection->write(\GuzzleHttp\Psr7\str($negotiatorResponse));
 

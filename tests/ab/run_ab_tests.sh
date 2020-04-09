@@ -9,16 +9,43 @@ if [ $(phpenv version-name) = "hhvm" -o $(phpenv version-name) = "5.4" -o $(phpe
 fi
 fi
 
-wstest -m fuzzingserver -s fuzzingserver$SKIP_DEFLATE.json &
+docker run --rm \
+    -d \
+    -v ${PWD}:/config \
+    -v ${PWD}/reports:/reports \
+    -p 9001:9001 \
+    --name fuzzingserver \
+    crossbario/autobahn-testsuite wstest -m fuzzingserver -s /config/fuzzingserver$SKIP_DEFLATE.json
 sleep 5
-php clientRunner.php
+if [ "$TRAVIS" != "true" ]; then
+    echo "Running tests vs Autobahn test client"
+    ###docker run -it --rm --name abpytest crossbario/autobahn-testsuite wstest --mode testeeclient -w ws://host.docker.internal:9001
+fi
+php -d memory_limit=256M clientRunner.php
+
+docker ps -a
+
+docker logs fuzzingserver
+
+docker stop fuzzingserver
+
+
 
 sleep 2
 
-php startServer.php &
+php -d memory_limit=256M startServer.php &
 sleep 3
 
-wstest -m fuzzingclient -s fuzzingclient$SKIP_DEFLATE.json
+
+docker run --rm \
+    -it \
+    -v ${PWD}:/config \
+    -v ${PWD}/reports:/reports \
+    --name fuzzingclient \
+    crossbario/autobahn-testsuite wstest -m fuzzingclient -s /config/fuzzingclient$SKIP_DEFLATE.json
 sleep 1
-kill $(ps aux | grep 'php startServer.php' | awk '{print $2}' | head -n 1)
+
+# send the shutdown command to the PHP echo server
+wget -O - -q http://127.0.0.1:9001/shutdown
+
 

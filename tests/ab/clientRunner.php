@@ -107,7 +107,8 @@ function getTestCases() {
     return $deferred->promise();
 }
 
-$cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(PermessageDeflateOptions::createEnabled());
+$cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(
+    PermessageDeflateOptions::permessageDeflateSupported() ? PermessageDeflateOptions::createEnabled() : null);
 
 function runTest($case)
 {
@@ -120,7 +121,8 @@ function runTest($case)
     $deferred = new Deferred();
 
     $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred, $casePath, $case) {
-        $cn = new ClientNegotiator(PermessageDeflateOptions::createEnabled());
+        $cn = new ClientNegotiator(
+            PermessageDeflateOptions::permessageDeflateSupported() ? PermessageDeflateOptions::createEnabled() : null);
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
         $rawResponse = "";
@@ -178,7 +180,9 @@ function createReport() {
     $deferred = new Deferred();
 
     $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred) {
-        $reportPath = "/updateReports?agent=" . AGENT . "&shutdownOnComplete=true";
+        // $reportPath = "/updateReports?agent=" . AGENT . "&shutdownOnComplete=true";
+        // we will stop it using docker now instead of just shutting down
+        $reportPath = "/updateReports?agent=" . AGENT;
         $cn = new ClientNegotiator();
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $reportPath));
 
@@ -242,6 +246,7 @@ getTestCases()->then(function ($count) use ($loop) {
             $allDeferred->resolve();
             return;
         }
+        echo "Running test $i/$count\n";
         runTest($i)->then($runNextCase);
     };
 
