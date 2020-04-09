@@ -2,7 +2,7 @@
     "options": {
         "failByDrop": false
     }
-  , "outdir": "./reports/servers"
+  , "outdir": "/reports/servers"
   , "servers": [{
         "agent": "RatchetRFC/0.1.0"
       , "url": "ws://host.docker.internal:9001"
