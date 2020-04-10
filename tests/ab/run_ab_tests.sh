@@ -39,7 +39,7 @@ sleep 3
 if [ "$OSTYPE" = "linux-gnu" ]; then
   IPADDR=`hostname -I | cut -f 1 -d ' '`
 else
-  IPADDR=`ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' | head -1`
+  IPADDR=`ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' | head -1 | tr -d 'adr:'`
 fi
 
 docker run --rm \

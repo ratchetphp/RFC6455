@@ -8,7 +8,7 @@
       , "url": "ws://host.ratchet.internal:9001"
       , "options": {"version": 18}
     }]
-  , "cases": ["9"]
+  , "cases": ["*"]
   , "exclude-cases": ["12.*", "13.*"]
   , "exclude-agent-cases": {}
 }
