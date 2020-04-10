@@ -11,7 +11,7 @@ require_once __DIR__ . "/../bootstrap.php";
 
 $loop   = \React\EventLoop\Factory::create();
 
-$socket = new \React\Socket\Server('127.0.0.1:9001', $loop);
+$socket = new \React\Socket\Server('0.0.0.0:9001', $loop);
 
 $closeFrameChecker = new \Ratchet\RFC6455\Messaging\CloseFrameChecker;
 $negotiator = new \Ratchet\RFC6455\Handshake\ServerNegotiator(new \Ratchet\RFC6455\Handshake\RequestVerifier, PermessageDeflateOptions::permessageDeflateSupported());
@@ -41,7 +41,7 @@ $socket->on('connection', function (React\Socket\ConnectionInterface $connection
         $negotiatorResponse = $negotiatorResponse->withAddedHeader("Content-Length", "0");
 
         if ($negotiatorResponse->getStatusCode() !== 101 && $psrRequest->getUri()->getPath() === '/shutdown') {
-            $connection->end(\GuzzleHttp\Psr7\str(new Response(200, [], 'Shutting down echo server.')));
+            $connection->end(\GuzzleHttp\Psr7\str(new Response(200, [], 'Shutting down echo server.' . PHP_EOL)));
             $socket->close();
             return;
         };

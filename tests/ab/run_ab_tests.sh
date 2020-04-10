@@ -36,13 +36,18 @@ sleep 2
 php -d memory_limit=256M startServer.php &
 sleep 3
 
+if [ "$OSTYPE" = "linux-gnu" ]; then
+  IPADDR=`hostname -I | cut -f 1 -d ' '`
+else
+  IPADDR=`ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' | head -1`
+fi
 
 docker run --rm \
     -it \
     -v ${PWD}:/config \
     -v ${PWD}/reports:/reports \
     --name fuzzingclient \
-    crossbario/autobahn-testsuite wstest -m fuzzingclient -s /config/fuzzingclient$SKIP_DEFLATE.json
+    crossbario/autobahn-testsuite /bin/sh -c "sh /config/docker_bootstrap.sh $IPADDR; wstest -m fuzzingclient -s /config/fuzzingclient$SKIP_DEFLATE.json"
 sleep 1
 
 # send the shutdown command to the PHP echo server

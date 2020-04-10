@@ -246,8 +246,13 @@ getTestCases()->then(function ($count) use ($loop) {
             $allDeferred->resolve();
             return;
         }
-        echo "Running test $i/$count\n";
-        runTest($i)->then($runNextCase);
+        echo "Running test $i/$count...";
+        $startTime = microtime(true);
+        runTest($i)
+            ->then(function () use ($startTime) {
+                echo " completed " . round((microtime(true) - $startTime) * 1000) . " ms\n";
+            })
+            ->then($runNextCase);
     };
 
     $i = 0;
