@@ -1,17 +1,20 @@
 <?php
+
 namespace Ratchet\RFC6455\Test\Unit\Handshake;
+
 use Ratchet\RFC6455\Handshake\ResponseVerifier;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Ratchet\RFC6455\Handshake\ResponseVerifier
  */
-class ResponseVerifierTest extends \PHPUnit_Framework_TestCase {
+class ResponseVerifierTest extends TestCase {
     /**
      * @var ResponseVerifier
      */
     protected $_v;
 
-    public function setUp() {
+    public function setUp() : void {
         $this->_v = new ResponseVerifier;
     }
 

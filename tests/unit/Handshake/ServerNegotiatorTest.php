@@ -4,8 +4,9 @@ namespace Ratchet\RFC6455\Test\Unit\Handshake;
 
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 use Ratchet\RFC6455\Handshake\ServerNegotiator;
+use PHPUnit\Framework\TestCase;
 
-class ServerNegotiatorTest extends \PHPUnit_Framework_TestCase
+class ServerNegotiatorTest extends TestCase
 {
     public function testNoUpgradeRequested() {
         $negotiator = new ServerNegotiator(new RequestVerifier());

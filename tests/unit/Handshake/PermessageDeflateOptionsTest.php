@@ -3,8 +3,9 @@
 namespace Ratchet\RFC6455\Test\Unit\Handshake;
 
 use Ratchet\RFC6455\Handshake\PermessageDeflateOptions;
+use PHPUnit\Framework\TestCase;
 
-class PermessageDeflateOptionsTest extends \PHPUnit_Framework_TestCase
+class PermessageDeflateOptionsTest extends TestCase
 {
     public static function versionSupportProvider() {
         return [
