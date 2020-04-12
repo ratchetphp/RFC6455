@@ -14,7 +14,7 @@ class RequestVerifierTest extends TestCase {
      */
     protected $_v;
 
-    public function setUp() : void {
+    public function setUp() {
         $this->_v = new RequestVerifier();
     }
 
