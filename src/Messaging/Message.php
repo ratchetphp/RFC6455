@@ -117,4 +117,16 @@ class Message implements \IteratorAggregate, MessageInterface {
 
         return Frame::OP_BINARY === $this->_frames->bottom()->getOpcode();
     }
+
+    /**
+     * @return boolean
+     */
+    public function getRsv1() {
+        if ($this->_frames->isEmpty()) {
+            return false;
+            //throw new \UnderflowException('Not enough data has been received to determine if message is binary');
+        }
+
+        return $this->_frames->bottom()->getRsv1();
+    }
 }

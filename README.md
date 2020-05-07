@@ -1,7 +1,7 @@
 # RFC6455 - The WebSocket Protocol
 
 [![Build Status](https://travis-ci.org/ratchetphp/RFC6455.svg?branch=master)](https://travis-ci.org/ratchetphp/RFC6455)
-![Autobahn Testsuite](https://img.shields.io/badge/Autobahn-passing-brightgreen.svg)
+[![Autobahn Testsuite](https://img.shields.io/badge/Autobahn-passing-brightgreen.svg)](http://socketo.me/reports/rfc-server/index.html)
 
 This library a protocol handler for the RFC6455 specification.
 It contains components for both server and client side handshake and messaging protocol negotation.

@@ -137,4 +137,27 @@ class RequestVerifier {
      */
     public function verifyExtensions($val) {
     }
+
+    public function getPermessageDeflateOptions(array $requestHeader, array $responseHeader) {
+        $deflate = true;
+        if (!isset($requestHeader['Sec-WebSocket-Extensions']) || count(array_filter($requestHeader['Sec-WebSocket-Extensions'], function ($val) {
+            return 'permessage-deflate' === substr($val, 0, strlen('permessage-deflate'));
+        })) === 0) {
+             $deflate = false;
+        }
+
+        if (!isset($responseHeader['Sec-WebSocket-Extensions']) || count(array_filter($responseHeader['Sec-WebSocket-Extensions'], function ($val) {
+                return 'permessage-deflate' === substr($val, 0, strlen('permessage-deflate'));
+            })) === 0) {
+            $deflate = false;
+        }
+
+        return [
+            'deflate' => $deflate,
+            'no_context_takeover' => false,
+            'max_window_bits' => null,
+            'request_no_context_takeover' => false,
+            'request_max_window_bits' => null
+        ];
+    }
 }
