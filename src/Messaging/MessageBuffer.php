@@ -93,7 +93,7 @@ class MessageBuffer {
         $this->closeFrameChecker = $frameChecker;
         $this->checkForMask = (bool)$expectMask;
 
-        $this->exceptionFactory ?: $this->exceptionFactory = function($msg) {
+        $this->exceptionFactory ?: $exceptionFactory = function($msg) {
             return new \UnderflowException($msg);
         };
 
