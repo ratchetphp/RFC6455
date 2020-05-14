@@ -119,10 +119,10 @@ class RequestVerifier {
 
     /**
      * Verify the version passed matches this RFC
-     * @param string|int $versionHeader MUST equal 13|"13"
+     * @param string[] $versionHeader MUST equal ["13"]
      * @return bool
      */
-    public function verifyVersion($versionHeader) {
+    public function verifyVersion(array $versionHeader) {
         return (1 === count($versionHeader) && static::VERSION === (int)$versionHeader[0]);
     }
 
