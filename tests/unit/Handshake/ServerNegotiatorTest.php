@@ -2,12 +2,12 @@
 
 namespace Ratchet\RFC6455\Test\Unit\Handshake;
 
+use GuzzleHttp\Psr7\HttpFactory;
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 use Ratchet\RFC6455\Handshake\ServerNegotiator;
+use PHPUnit\Framework\TestCase;
 
-use GuzzleHttp\Psr7\HttpFactory;
-
-class ServerNegotiatorTest extends \PHPUnit_Framework_TestCase
+class ServerNegotiatorTest extends TestCase
 {
     public function testNoUpgradeRequested() {
         $negotiator = new ServerNegotiator(new RequestVerifier(), new HttpFactory());

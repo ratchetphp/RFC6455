@@ -4,9 +4,7 @@
         "failByDrop": false
     }
   , "outdir": "./reports/clients"
-  , "cases": [
-  "*"
-  ]
-  , "exclude-cases": []
+  , "cases": ["*"]
+  , "exclude-cases": ["12.*", "13.*"]
   , "exclude-agent-cases": {}
 }

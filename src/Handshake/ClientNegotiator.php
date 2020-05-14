@@ -21,7 +21,10 @@ class ClientNegotiator {
      */
     private $requestFactory;
 
-    function __construct(RequestFactoryInterface $requestFactory) {
+    function __construct(
+        RequestFactoryInterface $requestFactory,
+        PermessageDeflateOptions $perMessageDeflateOptions = null
+    ) {
         $this->verifier = new ResponseVerifier;
         $this->requestFactory = $requestFactory;
 
@@ -31,6 +34,24 @@ class ClientNegotiator {
             ->withHeader('Upgrade'              , 'websocket')
             ->withHeader('Sec-WebSocket-Version', $this->getVersion())
             ->withHeader('User-Agent'           , 'Ratchet');
+
+        if ($perMessageDeflateOptions === null) {
+            $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
+        }
+
+        // https://bugs.php.net/bug.php?id=73373
+        // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
+        if ($perMessageDeflateOptions->isEnabled() &&
+            !PermessageDeflateOptions::permessageDeflateSupported()) {
+            trigger_error('permessage-deflate is being disabled because it is not support by your PHP version.', E_USER_NOTICE);
+            $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
+        }
+        if ($perMessageDeflateOptions->isEnabled() && !function_exists('deflate_add')) {
+            trigger_error('permessage-deflate is being disabled because you do not have the zlib extension.', E_USER_NOTICE);
+            $perMessageDeflateOptions = PermessageDeflateOptions::createDisabled();
+        }
+
+        $this->defaultHeader = $perMessageDeflateOptions->addHeaderToRequest($this->defaultHeader);
     }
 
     public function generateRequest(UriInterface $uri) {

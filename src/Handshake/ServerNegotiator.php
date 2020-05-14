@@ -22,9 +22,27 @@ class ServerNegotiator implements NegotiatorInterface {
 
     private $_strictSubProtocols = false;
 
-    public function __construct(RequestVerifier $requestVerifier, ResponseFactoryInterface $responseFactory) {
+    private $enablePerMessageDeflate = false;
+
+    public function __construct(
+        RequestVerifier $requestVerifier,
+        ResponseFactoryInterface $responseFactory,
+        $enablePerMessageDeflate = false
+    ) {
         $this->verifier = $requestVerifier;
         $this->responseFactory = $responseFactory;
+
+        // https://bugs.php.net/bug.php?id=73373
+        // https://bugs.php.net/bug.php?id=74240 - need >=7.1.4 or >=7.0.18
+        $supported = PermessageDeflateOptions::permessageDeflateSupported();
+        if ($enablePerMessageDeflate && !$supported) {
+            throw new \Exception('permessage-deflate is not supported by your PHP version (need >=7.1.4 or >=7.0.18).');
+        }
+        if ($enablePerMessageDeflate && !function_exists('deflate_add')) {
+            throw new \Exception('permessage-deflate is not supported because you do not have the zlib extension.');
+        }
+
+        $this->enablePerMessageDeflate = $enablePerMessageDeflate;
     }
 
     /**
@@ -104,12 +122,25 @@ class ServerNegotiator implements NegotiatorInterface {
                 $response = $response->withHeader('Sec-WebSocket-Protocol', $match);
             }
         }
-        return $response
+
+        $response = $response
             ->withStatus(101)
             ->withHeader('Upgrade'             , 'websocket')
             ->withHeader('Connection'          , 'Upgrade')
             ->withHeader('Sec-WebSocket-Accept', $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0]))
             ->withHeader('X-Powered-By'        , 'Ratchet');
+
+        try {
+            $perMessageDeflateRequest = PermessageDeflateOptions::fromRequestOrResponse($request)[0];
+        } catch (InvalidPermessageDeflateOptionsException $e) {
+            return new Response(400, [], null, '1.1', $e->getMessage());
+        }
+
+        if ($this->enablePerMessageDeflate && $perMessageDeflateRequest->isEnabled()) {
+            $response = $perMessageDeflateRequest->addHeaderToResponse($response);
+        }
+
+        return $response;
     }
 
     /**

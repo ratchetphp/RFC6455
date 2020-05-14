@@ -18,8 +18,12 @@ class ResponseVerifier {
             $request->getHeader('Sec-WebSocket-Protocol')
           , $response->getHeader('Sec-WebSocket-Protocol')
         );
+        $passes += (int)$this->verifyExtensions(
+            $request->getHeader('Sec-WebSocket-Extensions')
+            , $response->getHeader('Sec-WebSocket-Extensions')
+        );
 
-        return (5 === $passes);
+        return (6 === $passes);
     }
 
     public function verifyStatus($status) {
@@ -48,5 +52,13 @@ class ResponseVerifier {
 
     public function verifySubProtocol(array $requestHeader, array $responseHeader) {
         return 0 === count($responseHeader) || count(array_intersect($responseHeader, $requestHeader)) > 0;
+    }
+
+    public function verifyExtensions(array $requestHeader, array $responseHeader) {
+        if (in_array('permessage-deflate', $responseHeader)) {
+            return strpos(implode(',', $requestHeader), 'permessage-deflate') !== false ? 1 : 0;
+        }
+
+        return 1;
     }
 }
