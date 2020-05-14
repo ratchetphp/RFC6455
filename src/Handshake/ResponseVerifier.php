@@ -51,7 +51,13 @@ class ResponseVerifier {
     }
 
     public function verifySubProtocol(array $requestHeader, array $responseHeader) {
-        return 0 === count($responseHeader) || count(array_intersect($responseHeader, $requestHeader)) > 0;
+        if (0 === count($responseHeader)) {
+            return true;
+        }
+
+        $requestedProtocols = array_map('trim', explode(',', implode(',', $requestHeader)));
+
+        return count($responseHeader) === 1 && count(array_intersect($responseHeader, $requestedProtocols)) === 1;
     }
 
     public function verifyExtensions(array $requestHeader, array $responseHeader) {
