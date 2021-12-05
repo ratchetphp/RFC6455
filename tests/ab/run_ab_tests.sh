@@ -48,7 +48,7 @@ if [ "$ABTEST" = "server" ]; then
       -v ${PWD}:/config \
       -v ${PWD}/reports:/reports \
       --name fuzzingclient \
-      crossbario/autobahn-testsuite /bin/sh -c "wstest -m fuzzingclient -s /config/fuzzingclient$SKIP_DEFLATE.json"
+      crossbario/autobahn-testsuite /bin/sh -c "sh /config/docker_bootstrap.sh $IPADDR; wstest -m fuzzingclient -s /config/fuzzingclient$SKIP_DEFLATE.json"
   sleep 1
 
   # send the shutdown command to the PHP echo server

@@ -15,7 +15,7 @@ require __DIR__ . '/../bootstrap.php';
 
 define('AGENT', 'RatchetRFC/0.3');
 
-$testServer = "host.docker.internal";
+$testServer = $argc > 1 ? $argv[1] : "127.0.0.1";
 
 $loop = React\EventLoop\Factory::create();
 
