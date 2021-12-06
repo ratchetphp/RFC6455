@@ -26,7 +26,7 @@
         }
     },
     "require": {
-        "php": ">=5.4.2",
+        "php": ">=7.4",
         "guzzlehttp/psr7": "^2 || ^1.7"
     },
     "require-dev": {
