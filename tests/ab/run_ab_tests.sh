@@ -36,7 +36,7 @@ if [ "$ABTEST" = "server" ]; then
   fi
 
   docker run --rm \
-      -it \
+      -i \
       -v ${PWD}:/config \
       -v ${PWD}/reports:/reports \
       --name fuzzingclient \
@@ -46,5 +46,3 @@ if [ "$ABTEST" = "server" ]; then
   # send the shutdown command to the PHP echo server
   wget -O - -q http://127.0.0.1:9001/shutdown
 fi
-
-
