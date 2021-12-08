@@ -1,14 +1,6 @@
 set -x
 cd tests/ab
 
-SKIP_DEFLATE=
-if [ "$TRAVIS" = "true" ]; then
-if [ $(phpenv version-name) = "hhvm" -o $(phpenv version-name) = "5.4" -o $(phpenv version-name) = "5.5" -o $(phpenv version-name) = "5.6" ]; then
-    echo "Skipping deflate autobahn tests for $(phpenv version-name)"
-    SKIP_DEFLATE=_skip_deflate
-fi
-fi
-
 if [ "$ABTEST" = "client" ]; then
   docker run --rm \
       -d \
@@ -44,7 +36,7 @@ if [ "$ABTEST" = "server" ]; then
   fi
 
   docker run --rm \
-      -it \
+      -i \
       -v ${PWD}:/config \
       -v ${PWD}/reports:/reports \
       --name fuzzingclient \
@@ -54,5 +46,3 @@ if [ "$ABTEST" = "server" ]; then
   # send the shutdown command to the PHP echo server
   wget -O - -q http://127.0.0.1:9001/shutdown
 fi
-
-
