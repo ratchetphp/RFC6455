@@ -17,7 +17,7 @@ require __DIR__ . '/../bootstrap.php';
 
 define('AGENT', 'RatchetRFC/0.3');
 
-$testServer = "127.0.0.1";
+$testServer = $argc > 1 ? $argv[1] : "127.0.0.1";
 
 $loop = React\EventLoop\Factory::create();
 
@@ -57,9 +57,9 @@ function getTestCases() {
 
     $deferred = new Deferred();
 
-    $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred) {
+    $connector->connect($testServer . ':9002')->then(function (ConnectionInterface $connection) use ($deferred, $testServer) {
         $cn = new ClientNegotiator();
-        $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001/getCaseCount'));
+        $cnRequest = $cn->generateRequest(new Uri('ws://' . $testServer . ':9002/getCaseCount'));
 
         $rawResponse = "";
         $response = null;
@@ -122,10 +122,10 @@ function runTest($case)
 
     $deferred = new Deferred();
 
-    $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred, $casePath, $case) {
+    $connector->connect($testServer . ':9002')->then(function (ConnectionInterface $connection) use ($deferred, $casePath, $case, $testServer) {
         $cn = new ClientNegotiator(
             PermessageDeflateOptions::permessageDeflateSupported() ? PermessageDeflateOptions::createEnabled() : null);
-        $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
+        $cnRequest = $cn->generateRequest(new Uri('ws://' . $testServer . ':9002' . $casePath));
 
         $rawResponse = "";
         $response = null;
@@ -181,12 +181,12 @@ function createReport() {
 
     $deferred = new Deferred();
 
-    $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred) {
+    $connector->connect($testServer . ':9002')->then(function (ConnectionInterface $connection) use ($deferred, $testServer) {
         // $reportPath = "/updateReports?agent=" . AGENT . "&shutdownOnComplete=true";
         // we will stop it using docker now instead of just shutting down
         $reportPath = "/updateReports?agent=" . AGENT;
         $cn = new ClientNegotiator();
-        $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $reportPath));
+        $cnRequest = $cn->generateRequest(new Uri('ws://' . $testServer . ':9002' . $reportPath));
 
         $rawResponse = "";
         $response = null;
