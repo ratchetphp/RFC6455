@@ -27,9 +27,10 @@
     },
     "require": {
         "php": ">=5.4.2",
-        "guzzlehttp/psr7": "^1.0"
+        "psr/http-factory-implementation": "^1.0"
     },
     "require-dev": {
+        "guzzlehttp/psr7": "^2.0-dev",
         "phpunit/phpunit": "5.7.*",
         "react/socket": "^1.3"
     },

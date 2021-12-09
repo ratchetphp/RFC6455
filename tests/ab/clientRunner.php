@@ -8,6 +8,7 @@ use Ratchet\RFC6455\Messaging\CloseFrameChecker;
 use Ratchet\RFC6455\Messaging\MessageInterface;
 use React\Promise\Deferred;
 use Ratchet\RFC6455\Messaging\Frame;
+use GuzzleHttp\Psr7\HttpFactory;
 use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
 
@@ -56,7 +57,7 @@ function getTestCases() {
     $deferred = new Deferred();
 
     $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred) {
-        $cn = new ClientNegotiator();
+        $cn = new ClientNegotiator(new HttpFactory());
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001/getCaseCount'));
 
         $rawResponse = "";
@@ -108,6 +109,7 @@ function getTestCases() {
 }
 
 $cn = new \Ratchet\RFC6455\Handshake\ClientNegotiator(
+    new HttpFactory(),
     PermessageDeflateOptions::permessageDeflateSupported() ? PermessageDeflateOptions::createEnabled() : null);
 
 function runTest($case)
@@ -122,6 +124,7 @@ function runTest($case)
 
     $connector->connect($testServer . ':9001')->then(function (ConnectionInterface $connection) use ($deferred, $casePath, $case) {
         $cn = new ClientNegotiator(
+            new HttpFactory(),
             PermessageDeflateOptions::permessageDeflateSupported() ? PermessageDeflateOptions::createEnabled() : null);
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $casePath));
 
@@ -183,7 +186,7 @@ function createReport() {
         // $reportPath = "/updateReports?agent=" . AGENT . "&shutdownOnComplete=true";
         // we will stop it using docker now instead of just shutting down
         $reportPath = "/updateReports?agent=" . AGENT;
-        $cn = new ClientNegotiator();
+        $cn = new ClientNegotiator(new HttpFactory());
         $cnRequest = $cn->generateRequest(new Uri('ws://127.0.0.1:9001' . $reportPath));
 
         $rawResponse = "";
