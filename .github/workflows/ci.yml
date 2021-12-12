@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  PHPUnit:
-    name: PHPUnit (PHP ${{ matrix.php }})(${{ matrix.env }})
+  AutoBahn:
+    name: AutoBahn (PHP ${{ matrix.php }})(${{ matrix.env }})
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -35,6 +35,30 @@ jobs:
             ABTEST: ${{ matrix.env }}
             SKIP_DEFLATE: _skip_deflate
         if: ${{ matrix.php <= 5.6 }}
+
+  PHPUnit:
+    name: PHPUnit (PHP ${{ matrix.php }})(${{ matrix.env }})
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        env:
+          - client
+          - server
+        php:
+          - 7.4
+          - 7.3
+          - 7.2
+          - 7.1
+          - 7.0
+          - 5.6
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: xdebug
+      - run: composer install
 
       - run: sh tests/ab/run_ab_tests.sh
         env:
