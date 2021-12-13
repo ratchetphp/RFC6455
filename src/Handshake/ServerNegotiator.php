@@ -2,22 +2,20 @@
 namespace Ratchet\RFC6455\Handshake;
 use Psr\Http\Message\RequestInterface;
 use GuzzleHttp\Psr7\Response;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * The latest version of the WebSocket protocol
  * @todo Unicode: return mb_convert_encoding(pack("N",$u), mb_internal_encoding(), 'UCS-4BE');
  */
 class ServerNegotiator implements NegotiatorInterface {
-    /**
-     * @var \Ratchet\RFC6455\Handshake\RequestVerifier
-     */
-    private $verifier;
+    private RequestVerifier $verifier;
 
-    private $_supportedSubProtocols = [];
+    private array $_supportedSubProtocols = [];
 
-    private $_strictSubProtocols = false;
+    private bool $_strictSubProtocols = false;
 
-    private $enablePerMessageDeflate = false;
+    private bool $enablePerMessageDeflate = false;
 
     public function __construct(RequestVerifier $requestVerifier, $enablePerMessageDeflate = false) {
         $this->verifier = $requestVerifier;
@@ -38,21 +36,21 @@ class ServerNegotiator implements NegotiatorInterface {
     /**
      * {@inheritdoc}
      */
-    public function isProtocol(RequestInterface $request) {
+    public function isProtocol(RequestInterface $request): bool {
         return $this->verifier->verifyVersion($request->getHeader('Sec-WebSocket-Version'));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getVersionNumber() {
+    public function getVersionNumber(): int {
         return RequestVerifier::VERSION;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handshake(RequestInterface $request) {
+    public function handshake(RequestInterface $request): ResponseInterface {
         if (true !== $this->verifier->verifyMethod($request->getMethod())) {
             return new Response(405, ['Allow' => 'GET']);
         }
@@ -98,9 +96,7 @@ class ServerNegotiator implements NegotiatorInterface {
         if (count($subProtocols) > 0 || (count($this->_supportedSubProtocols) > 0 && $this->_strictSubProtocols)) {
             $subProtocols = array_map('trim', explode(',', implode(',', $subProtocols)));
 
-            $match = array_reduce($subProtocols, function($accumulator, $protocol) {
-                return $accumulator ?: (isset($this->_supportedSubProtocols[$protocol]) ? $protocol : null);
-            }, null);
+            $match = array_reduce($subProtocols, fn ($accumulator, $protocol) => $accumulator ?: (isset($this->_supportedSubProtocols[$protocol]) ? $protocol : null), null);
 
             if ($this->_strictSubProtocols && null === $match) {
                 return new Response(426, $upgradeSuggestion, null, '1.1', 'No Sec-WebSocket-Protocols requested supported');
@@ -137,14 +133,14 @@ class ServerNegotiator implements NegotiatorInterface {
      * @return string
      * @internal
      */
-    public function sign($key) {
+    public function sign(string $key): string {
         return base64_encode(sha1($key . static::GUID, true));
     }
 
     /**
      * @param array $protocols
      */
-    function setSupportedSubProtocols(array $protocols) {
+    public function setSupportedSubProtocols(array $protocols): void {
         $this->_supportedSubProtocols = array_flip($protocols);
     }
 
@@ -153,10 +149,10 @@ class ServerNegotiator implements NegotiatorInterface {
      *  will not upgrade if a match between request and supported subprotocols
      * @param boolean $enable
      * @todo Consider extending this interface and moving this there.
-     *       The spec does says the server can fail for this reason, but
-     * it is not a requirement. This is an implementation detail.
+     *       The spec does say the server can fail for this reason, but
+     *       it is not a requirement. This is an implementation detail.
      */
-    function setStrictSubProtocolCheck($enable) {
-        $this->_strictSubProtocols = (boolean)$enable;
+    public function setStrictSubProtocolCheck(bool $enable): void {
+        $this->_strictSubProtocols = $enable;
     }
 }
