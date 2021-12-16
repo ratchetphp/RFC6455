@@ -158,9 +158,17 @@ class MessageBuffer {
                 $payloadLenBytes = $payload_length === 126 ? 2 : 8;
                 $headerSize      += $payloadLenBytes;
                 $bytesToUpack    = substr($data, $frameStart + 2, $payloadLenBytes);
-                $payload_length  = $payload_length === 126
-                    ? unpack('n', $bytesToUpack)[1]
-                    : unpack('J', $bytesToUpack)[1];
+
+                if ($payload_length === 126){
+                    $payload_length = unpack('n', $bytesToUpack)[1];
+                } else {
+                    if (PHP_INT_SIZE == 4) { // if 32bits PHP
+                        $bytesToUpack = substr($bytesToUpack, 4); //Keep only 4 last bytes
+                        $payload_length = unpack('N', $bytesToUpack)[1];
+                    } else {
+                        $payload_length = unpack('J', $bytesToUpack)[1];
+                    }
+                }
             }
 
             $closeFrame = null;
