@@ -158,7 +158,7 @@ class MessageBuffer {
                 $payloadLenBytes = $payload_length === 126 ? 2 : 8;
                 $headerSize      += $payloadLenBytes;
                 $bytesToUpack    = substr($data, $frameStart + 2, $payloadLenBytes);
-                $payloadLenOver2GB = false
+                $payloadLenOver2GB = false;
 
                 if ($payload_length === 126){
                     $payload_length = unpack('n', $bytesToUpack)[1];
