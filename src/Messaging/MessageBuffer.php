@@ -158,10 +158,12 @@ class MessageBuffer {
                 $payloadLenBytes = $payload_length === 126 ? 2 : 8;
                 $headerSize      += $payloadLenBytes;
                 $bytesToUpack    = substr($data, $frameStart + 2, $payloadLenBytes);
+                $payloadLenOver2GB = false
 
                 if ($payload_length === 126){
                     $payload_length = unpack('n', $bytesToUpack)[1];
                 } else {
+                    $payloadLenOver2GB = unpack('N', $bytesToUpack)[1] > 0; //Decode only the 4 first bytes
                     if (PHP_INT_SIZE == 4) { // if 32bits PHP
                         $bytesToUpack = substr($bytesToUpack, 4); //Keep only 4 last bytes
                         $payload_length = unpack('N', $bytesToUpack)[1];
@@ -176,6 +178,10 @@ class MessageBuffer {
             if ($payload_length < 0) {
                 // this can happen when unpacking in php
                 $closeFrame = $this->newCloseFrame(Frame::CLOSE_PROTOCOL, 'Invalid frame length');
+            }
+
+            if (!$closeFrame && PHP_INT_SIZE == 4 && $payloadLenOver2GB) {
+                $closeFrame = $this->newCloseFrame(Frame::CLOSE_TOO_BIG, 'Frame over 2GB can\'t be handled on 32bits PHP');
             }
 
             if (!$closeFrame && $this->maxFramePayloadSize > 1 && $payload_length > $this->maxFramePayloadSize) {
