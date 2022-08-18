@@ -150,6 +150,7 @@ class MessageBuffer {
             $payload_length = unpack('C', $data[$frameStart + 1] & "\x7f")[1];
             $isMasked       = ($data[$frameStart + 1] & "\x80") === "\x80";
             $headerSize     += $isMasked ? 4 : 0;
+            $payloadLenOver2GB = false;
             if ($payload_length > 125 && ($dataLen - $frameStart < $headerSize + 125)) {
                 // no point of checking - this frame is going to be bigger than the buffer is right now
                 break;
@@ -158,7 +159,6 @@ class MessageBuffer {
                 $payloadLenBytes = $payload_length === 126 ? 2 : 8;
                 $headerSize      += $payloadLenBytes;
                 $bytesToUpack    = substr($data, $frameStart + 2, $payloadLenBytes);
-                $payloadLenOver2GB = false;
 
                 if ($payload_length === 126){
                     $payload_length = unpack('n', $bytesToUpack)[1];
