@@ -1,5 +1,6 @@
 <?php
 namespace Ratchet\RFC6455\Messaging;
+use Traversable;
 
 class Message implements \IteratorAggregate, MessageInterface {
     /**
