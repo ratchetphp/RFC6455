@@ -1,6 +1,5 @@
 <?php
 namespace Ratchet\RFC6455\Messaging;
-use Traversable;
 
 class Message implements \IteratorAggregate, MessageInterface {
     /**
@@ -20,7 +19,7 @@ class Message implements \IteratorAggregate, MessageInterface {
     }
 
     #[\ReturnTypeWillChange]
-    public function getIterator(): Traversable {
+    public function getIterator(): \Traversable {
         return $this->_frames;
     }
 
