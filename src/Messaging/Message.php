@@ -19,7 +19,7 @@ class Message implements \IteratorAggregate, MessageInterface {
     }
 
     #[\ReturnTypeWillChange]
-    public function getIterator() {
+    public function getIterator(): Traversable {
         return $this->_frames;
     }
 
