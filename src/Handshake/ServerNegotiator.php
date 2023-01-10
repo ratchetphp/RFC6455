@@ -19,7 +19,15 @@ class ServerNegotiator implements NegotiatorInterface {
 
     private $enablePerMessageDeflate = false;
 
-    public function __construct(RequestVerifier $requestVerifier, $enablePerMessageDeflate = false) {
+    /**
+     * @var bool
+     */
+    private $exposeXPoweredByHeader;
+
+    /**
+     * @param bool $exposeXPoweredByHeader Exposes to users that Ratchet is installed, through the HTTP header named `X-Powered-By`
+     */
+    public function __construct(RequestVerifier $requestVerifier, $enablePerMessageDeflate = false, $exposeXPoweredByHeader = true) {
         $this->verifier = $requestVerifier;
 
         // https://bugs.php.net/bug.php?id=73373
@@ -33,6 +41,7 @@ class ServerNegotiator implements NegotiatorInterface {
         }
 
         $this->enablePerMessageDeflate = $enablePerMessageDeflate;
+        $this->exposeXPoweredByHeader = $exposeXPoweredByHeader;
     }
 
     /**
@@ -111,12 +120,18 @@ class ServerNegotiator implements NegotiatorInterface {
             }
         }
 
-        $response = new Response(101, array_merge($headers, [
+        $headers = array_merge($headers, [
             'Upgrade'              => 'websocket'
             , 'Connection'           => 'Upgrade'
             , 'Sec-WebSocket-Accept' => $this->sign((string)$request->getHeader('Sec-WebSocket-Key')[0])
-            , 'X-Powered-By'         => 'Ratchet'
-        ]));
+        ]);
+
+        if ($this->exposeXPoweredByHeader)
+        {
+            $headers['X-Powered-By'] = 'Ratchet';
+        }
+
+        $response = new Response(101, $headers);
 
         try {
             $perMessageDeflateRequest = PermessageDeflateOptions::fromRequestOrResponse($request)[0];
