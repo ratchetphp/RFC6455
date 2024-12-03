@@ -166,7 +166,7 @@ function runTest(int $case)
         });
 
         $connection->on('close', static function () use ($deferred): void {
-            $deferred->resolve();
+            $deferred->resolve(null);
         });
 
         $connection->write(Message::toString($cnRequest));
