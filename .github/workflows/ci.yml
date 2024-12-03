@@ -6,10 +6,12 @@ on:
 
 jobs:
   PHPUnit:
-    name: PHPUnit (PHP ${{ matrix.php }})(${{ matrix.env }})
-    runs-on: ubuntu-20.04
+    name: PHPUnit (PHP ${{ matrix.php }})(${{ matrix.env }}) on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os:
+          - ubuntu-22.04
         env:
           - client
           - server
@@ -17,8 +19,11 @@ jobs:
           - 7.4
           - 8.0
           - 8.1
+          - 8.2
+          - 8.3
+          - 8.4
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
