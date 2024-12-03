@@ -245,7 +245,7 @@ getTestCases()->then(function ($count) use ($loop) {
     $runNextCase = static function () use (&$i, &$runNextCase, $count, $allDeferred): void {
         $i++;
         if ($i > $count) {
-            $allDeferred->resolve();
+            $allDeferred->resolve(null);
             return;
         }
         echo "Running test $i/$count...";
