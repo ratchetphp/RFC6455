@@ -294,7 +294,7 @@ class MessageBufferTest extends TestCase
             false,
             null,
             0,
-            0x8000000000000000
+            -1
         );
     }
 
@@ -307,7 +307,7 @@ class MessageBufferTest extends TestCase
             static function (Frame $frame): void {},
             false,
             null,
-            0x8000000000000000,
+            -1,
             0
         );
     }
