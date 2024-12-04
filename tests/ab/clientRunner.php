@@ -18,7 +18,7 @@ use React\Socket\Connector;
 
 require __DIR__ . '/../bootstrap.php';
 
-define('AGENT', 'RatchetRFC/0.3');
+define('AGENT', 'RatchetRFC/0.4');
 
 $testServer = $argc > 1 ? $argv[1] : "127.0.0.1";
 
