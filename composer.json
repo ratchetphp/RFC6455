@@ -27,7 +27,7 @@
     },
     "require": {
         "php": ">=7.4",
-        "guzzlehttp/psr7": "^2 || ^1.7",
+        "psr/http-factory-implementation": "^1.0",
         "symfony/polyfill-php80": "^1.15"
     },
     "require-dev": {
