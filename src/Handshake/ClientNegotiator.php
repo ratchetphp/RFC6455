@@ -14,7 +14,7 @@ class ClientNegotiator {
 
     public function __construct(
         RequestFactoryInterface $requestFactory,
-        PermessageDeflateOptions $perMessageDeflateOptions = null
+        ?PermessageDeflateOptions $perMessageDeflateOptions = null
     ) {
         $this->verifier = new ResponseVerifier;
         $this->requestFactory = $requestFactory;
