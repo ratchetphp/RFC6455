@@ -71,9 +71,9 @@ class Frame implements FrameInterface {
      * @param string|null $payload
      * @param bool        $final
      * @param int         $opcode
-     * @param callable<\UnderflowException> $ufExceptionFactory
+     * @param callable<\UnderflowException>|null $ufExceptionFactory
      */
-    public function __construct($payload = null, $final = true, $opcode = 1, callable $ufExceptionFactory = null) {
+    public function __construct($payload = null, $final = true, $opcode = 1, ?callable $ufExceptionFactory = null) {
         $this->ufeg = $ufExceptionFactory ?: static function($msg = '') {
             return new \UnderflowException($msg);
         };
