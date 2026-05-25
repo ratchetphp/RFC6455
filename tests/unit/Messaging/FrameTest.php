@@ -162,14 +162,18 @@ class FrameTest extends TestCase {
         $this->_frame->addBuffer(static::encode($bin));
         $ref = new \ReflectionClass($this->_frame);
         $cb  = $ref->getMethod('getFirstPayloadVal');
-        $cb->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $cb->setAccessible(true);
+        }
         $this->assertEquals(bindec($bin), $cb->invoke($this->_frame));
     }
 
     public function testFirstPayloadValUnderflow(): void {
         $ref = new \ReflectionClass($this->_frame);
         $cb  = $ref->getMethod('getFirstPayloadVal');
-        $cb->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $cb->setAccessible(true);
+        }
         $this->expectException(\UnderflowException::class);
         $cb->invoke($this->_frame);
     }
@@ -182,14 +186,18 @@ class FrameTest extends TestCase {
         $this->_frame->addBuffer(static::encode($bin));
         $ref = new \ReflectionClass($this->_frame);
         $cb  = $ref->getMethod('getNumPayloadBits');
-        $cb->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $cb->setAccessible(true);
+        }
         $this->assertEquals($expected_bits, $cb->invoke($this->_frame));
     }
 
     public function testgetNumPayloadBitsUnderflow(): void {
         $ref = new \ReflectionClass($this->_frame);
         $cb  = $ref->getMethod('getNumPayloadBits');
-        $cb->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $cb->setAccessible(true);
+        }
         $this->expectException(\UnderflowException::class);
         $cb->invoke($this->_frame);
     }
