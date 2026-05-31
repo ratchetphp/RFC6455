@@ -263,7 +263,9 @@ class MessageBufferTest extends TestCase
      */
     public function testMemoryLimits(string $phpConfigurationValue, int $expectedLimit): void {
         $method = new \ReflectionMethod(MessageBuffer::class, 'getMemoryLimit');
-        $method->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $method->setAccessible(true);
+        }
         $actualLimit = $method->invoke(null, $phpConfigurationValue);
 
         $this->assertSame($expectedLimit, $actualLimit);
@@ -339,11 +341,15 @@ class MessageBufferTest extends TestCase
         }
 
         $prop = new \ReflectionProperty($messageBuffer, 'maxMessagePayloadSize');
-        $prop->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $prop->setAccessible(true);
+        }
         $this->assertEquals($expectedLimit / 4, $prop->getValue($messageBuffer));
 
         $prop = new \ReflectionProperty($messageBuffer, 'maxFramePayloadSize');
-        $prop->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $prop->setAccessible(true);
+        }
         $this->assertEquals($expectedLimit / 4, $prop->getValue($messageBuffer));
     }
 
@@ -365,11 +371,15 @@ class MessageBufferTest extends TestCase
         );
 
         $prop = new \ReflectionProperty($messageBuffer, 'maxMessagePayloadSize');
-        $prop->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $prop->setAccessible(true);
+        }
         $this->assertEquals(0, $prop->getValue($messageBuffer));
 
         $prop = new \ReflectionProperty($messageBuffer, 'maxFramePayloadSize');
-        $prop->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $prop->setAccessible(true);
+        }
         $this->assertEquals(0, $prop->getValue($messageBuffer));
     }
 }
