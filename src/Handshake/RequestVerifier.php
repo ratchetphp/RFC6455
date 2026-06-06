@@ -53,7 +53,7 @@ class RequestVerifier {
      * @return bool
      */
     public function verifyRequestURI(string $val): bool {
-        if ($val[0] !== '/') {
+        if ($val === '' || $val[0] !== '/') {
             return false;
         }
 

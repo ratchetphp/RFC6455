@@ -67,7 +67,8 @@ class RequestVerifierTest extends TestCase {
             array(false, '/chat#bad'),
             array(false, 'nope'),
             array(false, '/ ಠ_ಠ '),
-            array(false, '/✖')
+            array(false, '/✖'),
+            array(false, '')
         );
     }
 
