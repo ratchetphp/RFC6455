@@ -2,7 +2,6 @@
 namespace Ratchet\RFC6455\Handshake;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
-use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -127,7 +126,7 @@ class ServerNegotiator implements NegotiatorInterface {
         try {
             $perMessageDeflateRequest = PermessageDeflateOptions::fromRequestOrResponse($request)[0];
         } catch (InvalidPermessageDeflateOptionsException $e) {
-            return new Response(400, [], null, '1.1', $e->getMessage());
+            return $this->responseFactory->createResponse(400, $e->getMessage());
         }
 
         if ($this->enablePerMessageDeflate && $perMessageDeflateRequest->isEnabled()) {
