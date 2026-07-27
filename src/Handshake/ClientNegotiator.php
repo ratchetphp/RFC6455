@@ -23,7 +23,7 @@ class ClientNegotiator {
             ->createRequest('GET', '')
             ->withHeader('Connection'           , 'Upgrade')
             ->withHeader('Upgrade'              , 'websocket')
-            ->withHeader('Sec-WebSocket-Version', $this->getVersion())
+            ->withHeader('Sec-WebSocket-Version', (string)$this->getVersion())
             ->withHeader('User-Agent'           , 'Ratchet');
 
         $perMessageDeflateOptions ??= PermessageDeflateOptions::createDisabled();
