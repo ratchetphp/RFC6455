@@ -16,7 +16,7 @@ require_once __DIR__ . "/../bootstrap.php";
 
 $loop   = \React\EventLoop\Factory::create();
 
-$socket = new \React\Socket\Server('0.0.0.0:9001', $loop);
+$socket = new \React\Socket\Server('0.0.0.0:9001', $loop, ['tcp' => ['tcp_nodelay' => true]]);
 
 $closeFrameChecker = new CloseFrameChecker;
 
