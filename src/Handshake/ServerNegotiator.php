@@ -79,7 +79,7 @@ class ServerNegotiator implements NegotiatorInterface {
         $upgradeResponse = $response
             ->withHeader('Connection'           , 'Upgrade')
             ->withHeader('Upgrade'              , 'websocket')
-            ->withHeader('Sec-WebSocket-Version', $this->getVersionNumber());
+            ->withHeader('Sec-WebSocket-Version', (string)$this->getVersionNumber());
 
         if (count($this->_supportedSubProtocols) > 0) {
             $upgradeResponse = $upgradeResponse->withHeader(
