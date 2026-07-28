@@ -4,6 +4,7 @@ namespace Ratchet\RFC6455\Test\Unit\Handshake;
 
 use GuzzleHttp\Psr7\Message;
 use GuzzleHttp\Psr7\HttpFactory;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 use Ratchet\RFC6455\Handshake\ServerNegotiator;
 use PHPUnit\Framework\TestCase;
@@ -122,6 +123,43 @@ Accept-Language: en-US,en;q=0.8
         $this->assertEquals('Upgrade', $response->getHeaderLine('Connection'));
         $this->assertEquals('websocket', $response->getHeaderLine('Upgrade'));
         $this->assertEquals('13', $response->getHeaderLine('Sec-WebSocket-Version'));
+    }
+
+    public function testInvalidPermessageDeflate(): void {
+        $responseFactory = $this->createMock(ResponseFactoryInterface::class);
+        $responseFactory->expects($this->exactly(2))
+            ->method('createResponse')
+            ->willReturnOnConsecutiveCalls(
+                (new HttpFactory())->createResponse(),
+                (new HttpFactory())->createResponse(400, 'server_max_window_bits must have a value between 8 and 15.')
+            );
+
+        $negotiator = new ServerNegotiator(new RequestVerifier(), $responseFactory);
+
+        $requestText = 'GET / HTTP/1.1
+Host: 127.0.0.1:6789
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade: websocket
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=99
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Encoding: gzip, deflate, sdch, br
+Accept-Language: en-US,en;q=0.8
+
+';
+
+        $request = Message::parseRequest($requestText);
+
+        $response = $negotiator->handshake($request);
+
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertEquals('server_max_window_bits must have a value between 8 and 15.', $response->getReasonPhrase());
     }
 
     public function testBadSubprotocolResponse(): void {
