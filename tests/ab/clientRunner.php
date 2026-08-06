@@ -24,7 +24,7 @@ $testServer = $argc > 1 ? $argv[1] : "127.0.0.1";
 
 $loop = React\EventLoop\Factory::create();
 
-$connector = new Connector($loop);
+$connector = new Connector($loop, ['tcp' => ['tcp_nodelay' => true]]);
 
 function echoStreamerFactory(ConnectionInterface $conn, ?PermessageDeflateOptions $permessageDeflateOptions = null): MessageBuffer
 {
