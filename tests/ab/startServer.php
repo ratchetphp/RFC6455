@@ -1,7 +1,6 @@
 <?php
 
 use GuzzleHttp\Psr7\Message;
-use GuzzleHttp\Psr7\Response;
 use Ratchet\RFC6455\Handshake\PermessageDeflateOptions;
 use Ratchet\RFC6455\Handshake\RequestVerifier;
 use Ratchet\RFC6455\Handshake\ServerNegotiator;
@@ -29,11 +28,11 @@ $negotiator = new ServerNegotiator(
 $uException = new \UnderflowException;
 
 
-$socket->on('connection', static function (React\Socket\ConnectionInterface $connection) use ($negotiator, $closeFrameChecker, $uException, $socket): void {
+$socket->on('connection', static function (React\Socket\ConnectionInterface $connection) use ($negotiator, $closeFrameChecker, $uException): void {
     $headerComplete = false;
     $buffer = '';
     $parser = null;
-    $connection->on('data', static function ($data) use ($connection, &$parser, &$headerComplete, &$buffer, $negotiator, $closeFrameChecker, $uException, $socket): void {
+    $connection->on('data', static function ($data) use ($connection, &$parser, &$headerComplete, &$buffer, $negotiator, $closeFrameChecker, $uException): void {
         if ($headerComplete) {
             $parser->onData($data);
             return;
@@ -49,12 +48,6 @@ $socket->on('connection', static function (React\Socket\ConnectionInterface $con
         $negotiatorResponse = $negotiator->handshake($psrRequest);
 
         $negotiatorResponse = $negotiatorResponse->withAddedHeader("Content-Length", "0");
-
-        if ($negotiatorResponse->getStatusCode() !== 101 && $psrRequest->getUri()->getPath() === '/shutdown') {
-            $connection->end(Message::toString(new Response(200, [], 'Shutting down echo server.' . PHP_EOL)));
-            $socket->close();
-            return;
-        };
 
         $connection->write(Message::toString($negotiatorResponse));
 

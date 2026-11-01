@@ -34,15 +34,5 @@
         "phpunit/phpunit": "^9.5",
         "react/socket": "^1.3",
         "guzzlehttp/psr7": "^2.7"
-    },
-    "scripts": {
-        "abtest-client": "ABTEST=client && sh tests/ab/run_ab_tests.sh",
-        "abtest-server": "ABTEST=server && sh tests/ab/run_ab_tests.sh",
-        "phpunit": "phpunit --colors=always",
-        "test": [
-            "@abtest-client",
-            "@abtest-server",
-            "@phpunit"
-        ]
     }
 }

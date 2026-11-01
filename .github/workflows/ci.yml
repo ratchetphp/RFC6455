@@ -6,15 +6,10 @@ on:
 
 jobs:
   PHPUnit:
-    name: PHPUnit (PHP ${{ matrix.php }})(${{ matrix.env }}) on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: PHPUnit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        os:
-          - ubuntu-24.04
-        env:
-          - client
-          - server
         php:
           - 7.4
           - 8.0
@@ -29,11 +24,63 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          coverage: xdebug
+          coverage: none
+      - run: composer install
+      - run: vendor/bin/phpunit --verbose
+
+  Autobahn-client:
+    name: Autobahn client (PHP ${{ matrix.php }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        php:
+          - 7.4
+          - 8.0
+          - 8.1
+          - 8.2
+          - 8.3
+          - 8.4
+          - 8.5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
       - run: docker pull crossbario/autobahn-testsuite
       - run: composer install
+      - run: docker run -d -v "$PWD/tests/ab":/config -v "$PWD/tests/ab/reports":/reports -p 9002:9002 crossbario/autobahn-testsuite wstest -m fuzzingserver -s /config/fuzzingserver.json
+      - run: until curl -I --no-progress-meter http://localhost:9002/; do sleep 0.1; done
+        timeout-minutes: 1
+      - run: php -d memory_limit=256M tests/ab/clientRunner.php
+      - run: jq -ec '.[] | map_values(.behavior | select(IN("OK", "NON-STRICT", "INFORMATIONAL") | not)) | ., . == {}' tests/ab/reports/clients/index.json
 
-      - run: sh tests/ab/run_ab_tests.sh
-        env:
-            ABTEST: ${{ matrix.env }}
-      - run: vendor/bin/phpunit --verbose
+  Autobahn-server:
+    name: Autobahn server (PHP ${{ matrix.php }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        php:
+          - 7.4
+          - 8.0
+          - 8.1
+          - 8.2
+          - 8.3
+          - 8.4
+          - 8.5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - run: docker pull crossbario/autobahn-testsuite
+      - run: composer install
+      - run: php -d memory_limit=256M tests/ab/startServer.php &
+      - run: until curl -I --no-progress-meter http://localhost:9001/; do sleep 0.1; done
+        timeout-minutes: 1
+      - run: docker run --rm -e PYTHONUNBUFFERED=1 -v "$PWD/tests/ab":/config -v "$PWD/tests/ab/reports":/reports --add-host host.docker.internal:host-gateway crossbario/autobahn-testsuite wstest -m fuzzingclient -s /config/fuzzingclient.json
+        timeout-minutes: 25
+      - run: jq -ec '.[] | map_values(.behavior | select(IN("OK", "NON-STRICT", "INFORMATIONAL") | not)) | ., . == {}' tests/ab/reports/servers/index.json
